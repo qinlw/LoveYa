@@ -1,0 +1,37 @@
+LoveYa - 记录恋爱时光，守护美好回忆
+
+💖 专为情侣打造的恋爱记录应用
+
+主要功能：
+- 💕 纪念日管理：记录重要日子，设置提醒
+- 📔 恋爱日记：记录每一天的甜蜜瞬间
+- 📊 属性记录：记录身高、体重、血压等健康数据
+- 🔐 多用户支持：情侣双方可独立记录，数据安全隔离
+- 📤 数据备份：支持本地备份和导出，数据永不丢失
+- 🎨 精美主题：紫色浪漫主题，温馨界面设计
+- ⏰ 备份提醒：智能提醒备份，数据安全无忧
+
+适用人群：情侣、夫妻
+
+让每一段恋爱都被认真记录，让每一天的回忆都值得珍藏。
+
+---
+
+English Description:
+
+LoveYa - Record love moments, cherish beautiful memories
+
+💖 A love recording app specially designed for couples
+
+Main Features:
+- 💕 Anniversary Management: Record important dates and set reminders
+- 📔 Love Diary: Record sweet moments every day
+- 📊 Health Records: Track height, weight, blood pressure and other health data
+- 🔐 Multi-user Support: Couples can record independently with secure data isolation
+- 📤 Data Backup: Local backup and export support, data never lost
+- 🎨 Beautiful Theme: Purple romantic theme with warm interface design
+- ⏰ Backup Reminder: Smart backup reminders for data security
+
+Target Audience: Couples
+
+Let every love be carefully recorded, let every day's memories be worth cherishing.

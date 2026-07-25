@@ -1,0 +1,10 @@
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/sky_500" />
+    <foreground>
+        <vector android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108" xmlns:android="http://schemas.android.com/apk/res/android">
+            <path android:fillColor="#ffffff" android:pathData="M54 10C30.142 10 10 30.142 10 54s20.142 44 44 44 44-20.142 44-44S77.858 10 54 10zm0 80C32.906 90 18 75.094 18 54S32.906 18 54 18s36 14.906 36 36-14.906 36-36 36z"/>
+            <path android:fillColor="#ffffff" android:pathData="M54 24c-16.569 0-30 13.431-30 30s13.431 30 30 30 30-13.431 30-30-13.431-30-30-30zm0 52c-12.15 0-22-9.85-22-22s9.85-22 22-22 22 9.85 22 22-9.85 22-22 22z"/>
+            <path android:fillColor="#ffffff" android:pathData="M40 44l14 10 14-10v8l-14 10-14-10v-8z"/>
+        </vector>
+    </foreground>
+</adaptive-icon>

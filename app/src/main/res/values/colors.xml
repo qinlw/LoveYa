@@ -1,0 +1,55 @@
+<resources>
+    <color name="primary">#0EA5E9</color>
+    <color name="primary_light">#E0F2FE</color>
+    <color name="primary_dark">#034B68</color>
+    <color name="secondary">#06B6D4</color>
+    <color name="secondary_light">#CCFBFF</color>
+    <color name="secondary_dark">#004D5B</color>
+    <color name="background">#F0F9FF</color>
+    <color name="surface">#F8FAFC</color>
+    <color name="surface_variant">#E0F2FE</color>
+    <color name="text_primary">#0F172A</color>
+    <color name="text_secondary">#475569</color>
+    <color name="text_tertiary">#94A3B8</color>
+    <color name="error">#DC2626</color>
+    <color name="error_light">#FEE2E2</color>
+    <color name="error_dark">#991B1B</color>
+    <color name="outline">#94A3B8</color>
+    <color name="outline_variant">#E2E8F0</color>
+
+    <color name="sky_50">#f0f9ff</color>
+    <color name="sky_100">#e0f2fe</color>
+    <color name="sky_200">#bae6fd</color>
+    <color name="sky_300">#7dd3fc</color>
+    <color name="sky_400">#38bdf8</color>
+    <color name="sky_500">#0ea5e9</color>
+    <color name="sky_600">#0284c7</color>
+    <color name="sky_700">#0369a1</color>
+    <color name="sky_800">#075985</color>
+    <color name="sky_900">#0c4a6e</color>
+
+    <color name="cyan_50">#ecfeff</color>
+    <color name="cyan_100">#cffafe</color>
+    <color name="cyan_200">#a5f3fc</color>
+    <color name="cyan_300">#67e8f9</color>
+    <color name="cyan_400">#22d3ee</color>
+    <color name="cyan_500">#06b6d4</color>
+    <color name="cyan_600">#0891b2</color>
+    <color name="cyan_700">#0e7490</color>
+    <color name="cyan_800">#155e75</color>
+    <color name="cyan_900">#164e63</color>
+
+    <color name="pink_50">#FFFBFC</color>
+    <color name="pink_100">#FFE5E9</color>
+    <color name="pink_200">#FFC7D0</color>
+    <color name="pink_300">#FFA0B0</color>
+    <color name="pink_400">#FF7890</color>
+    <color name="pink_500">#FF6B8A</color>
+    <color name="pink_600">#F472B6</color>
+    <color name="pink_700">#EC4899</color>
+    <color name="pink_800">#BE185D</color>
+    <color name="pink_900">#881337</color>
+
+    <color name="white">#ffffff</color>
+    <color name="black">#000000</color>
+</resources>

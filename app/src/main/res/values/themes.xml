@@ -1,0 +1,11 @@
+<resources>
+    <style name="Theme.LoveYa" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/sky_500</item>
+        <item name="android:navigationBarColor">@color/sky_500</item>
+    </style>
+    <style name="Theme.LoveYa.Splash" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/sky_50</item>
+        <item name="android:navigationBarColor">@color/sky_50</item>
+        <item name="android:windowBackground">@color/sky_50</item>
+    </style>
+</resources>

@@ -1,0 +1,111 @@
+LoveYa 隐私政策
+
+生效日期：2026年7月12日
+
+1. 数据收集
+
+我们尊重您的隐私。LoveYa是一款本地应用，所有数据均存储在您的设备上，我们不会收集或上传您的个人数据到任何服务器。
+
+1.1 用户数据
+- 用户账户信息（用户名、密码）：存储在设备本地，使用Android Security Crypto进行加密
+- 用户日记内容：存储在本地数据库中
+- 用户纪念日数据：存储在本地数据库中
+- 用户健康属性记录：存储在本地数据库中
+
+1.2 应用数据
+- 应用设置和偏好：存储在本地DataStore中
+- 备份文件：存储在您选择的本地存储路径
+
+2. 数据使用
+
+2.1 数据仅用于：
+- 提供应用核心功能
+- 实现用户界面展示
+- 支持数据导入导出功能
+- 实现定时备份提醒
+
+2.2 数据共享
+- 我们不会与任何第三方共享您的数据
+- 所有数据始终保留在您的设备上
+
+3. 用户权利
+
+3.1 您有权：
+- 随时查看您的数据
+- 随时导出您的数据
+- 随时删除您的账户和所有数据
+- 随时卸载应用并清除所有本地数据
+
+4. 数据安全
+
+4.1 我们采取以下安全措施：
+- 使用Android Security Crypto对敏感数据进行加密
+- 使用Room数据库进行数据持久化
+- 支持SAF（Storage Access Framework）选择安全存储位置
+- 数据仅在设备本地存储，不上传云端
+
+5. 更改政策
+
+我们可能会不定期更新本隐私政策。当我们更新政策时，会在应用内通知您。
+
+6. 联系我们
+
+如果您对本隐私政策有任何疑问或建议，请通过以下方式联系我们：
+- 应用内反馈功能
+
+---
+
+LoveYa Privacy Policy
+
+Effective Date: July 12, 2026
+
+1. Data Collection
+
+We respect your privacy. LoveYa is a local application where all data is stored on your device. We do not collect or upload your personal data to any server.
+
+1.1 User Data
+- User account information (username, password): Stored locally on the device, encrypted using Android Security Crypto
+- User diary content: Stored in the local database
+- User anniversary data: Stored in the local database
+- User health records: Stored in the local database
+
+1.2 App Data
+- App settings and preferences: Stored in local DataStore
+- Backup files: Stored in the local storage path you choose
+
+2. Data Usage
+
+2.1 Data is used only for:
+- Providing core app functionality
+- Displaying user interface
+- Supporting data import/export features
+- Implementing scheduled backup reminders
+
+2.2 Data Sharing
+- We do not share your data with any third parties
+- All data remains on your device at all times
+
+3. User Rights
+
+3.1 You have the right to:
+- View your data at any time
+- Export your data at any time
+- Delete your account and all data at any time
+- Uninstall the app and clear all local data at any time
+
+4. Data Security
+
+4.1 We take the following security measures:
+- Encrypt sensitive data using Android Security Crypto
+- Use Room database for data persistence
+- Support SAF (Storage Access Framework) for secure storage location selection
+- Data is only stored locally on the device, not uploaded to the cloud
+
+5. Policy Changes
+
+We may update this privacy policy from time to time. When we update the policy, we will notify you within the app.
+
+6. Contact Us
+
+If you have any questions or suggestions regarding this privacy policy, please contact us through:
+- In-app feedback feature
