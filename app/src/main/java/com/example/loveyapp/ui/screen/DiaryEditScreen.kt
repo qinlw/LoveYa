@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.loveyapp.ui.viewmodel.DiaryViewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun DiaryEditScreen(
@@ -46,7 +48,8 @@ fun DiaryEditScreen(
     }
 
     if (diaryId == null && notebookName.isEmpty()) {
-        notebookName = "我的日记"
+        val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        notebookName = "我的日记${today}"
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -66,7 +69,7 @@ fun DiaryEditScreen(
             OutlinedTextField(
                 value = notebookName,
                 onValueChange = { notebookName = it },
-                label = { Text("笔记本名称") },
+                label = { Text("日记标题") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -84,7 +87,7 @@ fun DiaryEditScreen(
             OutlinedTextField(
                 value = tags,
                 onValueChange = { tags = it },
-                label = { Text("标签（逗号分隔）") },
+                label = { Text("标签") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp)

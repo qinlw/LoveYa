@@ -132,6 +132,9 @@ fun AppNavigator(
             ) { padding ->
                 DataBookListScreen(
                     onNavigateToDetail = { dataBookId -> navController.navigate(NavRoutes.DataBookDetail.createRoute(dataBookId)) },
+                    onNavigateToEdit = { dataBookId ->
+                        navController.navigate(NavRoutes.DataBookEdit.createRoute(dataBookId))
+                    },
                     navController = navController,
                     padding = padding
                 )
@@ -178,7 +181,6 @@ fun AppNavigator(
                         onExportData = onExportData,
                         onImportData = onImportData,
                         onSelectStoragePath = onSelectStoragePath,
-                        onStoragePathChanged = onStoragePathChanged,
                         onDataReload = onDataReload,
                         padding = padding
                     )
@@ -218,8 +220,8 @@ private fun HomeScreenWithFab(navController: NavHostController) {
     if (showAddAnniversary) {
         AddAnniversaryDialog(
             onDismiss = { showAddAnniversary = false },
-            onSave = { name, date ->
-                viewModel.addAnniversary(name, date) {
+            onSave = { name, date, calendarType ->
+                viewModel.addAnniversary(name, date, calendarType) {
                     showAddAnniversary = false
                 }
             }

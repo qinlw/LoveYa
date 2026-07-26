@@ -1,61 +1,124 @@
 package com.example.loveyapp.ui.component
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.example.loveyapp.util.CalendarType
+import com.example.loveyapp.util.LunarCalendarUtil
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePicker(
     label: String,
     selectedDate: String,
-    onDateSelected: (String) -> Unit
+    calendarType: String,
+    onDateSelected: (String, String) -> Unit
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
+    var currentCalendarType by remember { mutableStateOf(calendarType) }
+    var selectedDateValue by remember { mutableStateOf(selectedDate) }
+    var displayDateValue by remember { mutableStateOf("") }
+    var alternateDateValue by remember { mutableStateOf("") }
     val datePickerState = rememberDatePickerState()
 
-    OutlinedTextField(
-        value = selectedDate,
-        onValueChange = {},
-        label = { Text(label) },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .semantics {
-                contentDescription = "$label：${if (selectedDate.isBlank()) "未选择" else selectedDate}"
-            },
-        readOnly = true,
-        trailingIcon = {
-            TextButton(
-                onClick = { showDatePicker = true },
-                modifier = Modifier.semantics {
-                    contentDescription = "打开${label}选择器"
+    LaunchedEffect(selectedDate, currentCalendarType) {
+        if (selectedDate.isNotBlank()) {
+            try {
+                val localDate = LocalDate.parse(selectedDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                if (currentCalendarType == "SOLAR") {
+                    displayDateValue = selectedDate
+                    alternateDateValue = LunarCalendarUtil.solarToLunar(localDate)
+                } else {
+                    displayDateValue = LunarCalendarUtil.solarToLunar(localDate)
+                    alternateDateValue = selectedDate
                 }
-            ) {
-                Text("选择")
+            } catch (e: Exception) {
+                displayDateValue = selectedDate
+                alternateDateValue = ""
+            }
+        } else {
+            displayDateValue = ""
+            alternateDateValue = ""
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val types = CalendarType.values()
+            for (index in types.indices) {
+                val type = types[index]
+                Button(
+                    onClick = {
+                        if (selectedDate.isNotBlank()) {
+                            try {
+                                val localDate = LocalDate.parse(selectedDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                                if (type.name == "SOLAR") {
+                                    displayDateValue = selectedDate
+                                    alternateDateValue = LunarCalendarUtil.solarToLunar(localDate)
+                                } else {
+                                    displayDateValue = LunarCalendarUtil.solarToLunar(localDate)
+                                    alternateDateValue = selectedDate
+                                }
+                            } catch (e: Exception) {
+                                displayDateValue = selectedDate
+                                alternateDateValue = ""
+                            }
+                        }
+                        currentCalendarType = type.name
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (currentCalendarType == type.name) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
+                        contentColor = if (currentCalendarType == type.name) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                ) {
+                    Text(if (type == CalendarType.SOLAR) "公历" else "农历")
+                }
             }
         }
-    )
+
+        OutlinedTextField(
+            value = displayDateValue,
+            onValueChange = {},
+            label = { Text(label) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            readOnly = true,
+            trailingIcon = {
+                TextButton(onClick = { showDatePicker = true }) {
+                    Text("选择")
+                }
+            }
+        )
+
+        if (alternateDateValue.isNotBlank()) {
+            Text(
+                text = if (currentCalendarType == "SOLAR") "农历: $alternateDateValue" else "公历: $alternateDateValue",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
+    }
 
     if (showDatePicker) {
         DatePickerDialog(
@@ -66,7 +129,18 @@ fun DatePicker(
                         val date = Instant.ofEpochMilli(millis)
                             .atZone(ZoneId.systemDefault())
                             .toLocalDate()
-                        onDateSelected(date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                        val formattedDate = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                        selectedDateValue = formattedDate
+                        
+                        if (currentCalendarType == "SOLAR") {
+                            displayDateValue = formattedDate
+                            alternateDateValue = LunarCalendarUtil.solarToLunar(date)
+                        } else {
+                            displayDateValue = LunarCalendarUtil.solarToLunar(date)
+                            alternateDateValue = formattedDate
+                        }
+                        
+                        onDateSelected(formattedDate, currentCalendarType)
                     }
                     showDatePicker = false
                 }) {
@@ -79,7 +153,7 @@ fun DatePicker(
                 }
             }
         ) {
-            DatePicker(state = datePickerState)
+            androidx.compose.material3.DatePicker(state = datePickerState)
         }
     }
 }

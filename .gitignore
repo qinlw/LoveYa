@@ -1,4 +1,4 @@
-﻿*.iml
+*.iml
 .gradle
 /local.properties
 /.idea
@@ -17,8 +17,10 @@ Thumbs.db
 # Signing files
 app/loveya-release-key.jks
 app/signing.properties
-PushManual.md
 
 # APK directory - allow APK files here
 !apk/
 !apk/*.apk
+
+# Ignore test APKs in sub-test-apk directory
+apk/sub-test-apk/

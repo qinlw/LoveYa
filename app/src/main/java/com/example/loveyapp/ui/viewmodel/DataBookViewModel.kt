@@ -11,14 +11,27 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class DataBookSortType {
+    DEFAULT,
+    TIME,
+    NAME
+}
+
 @HiltViewModel
 class DataBookViewModel @Inject constructor(
     private val dataBookRepository: DataBookRepository
 ) : ViewModel() {
     var dataBooks by mutableStateOf<List<DataBook>>(emptyList())
+    var filteredDataBooks by mutableStateOf<List<DataBook>>(emptyList())
     var currentDataBook by mutableStateOf<DataBook?>(null)
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
+    private var _searchQuery by mutableStateOf("")
+    private var _selectedTag by mutableStateOf<String?>(null)
+    val searchQuery get() = _searchQuery
+    val selectedTag get() = _selectedTag
+    var sortType by mutableStateOf(DataBookSortType.DEFAULT)
+    var sortOrder by mutableStateOf(SortOrder.DESC)
 
     init {
         loadDataBooks()
@@ -28,9 +41,63 @@ class DataBookViewModel @Inject constructor(
         viewModelScope.launch {
             isLoading = true
             error = null
-            dataBooks = dataBookRepository.getAllDataBooks().sortedBy { it.notebookName }
+            dataBooks = dataBookRepository.getAllDataBooks()
+            applyFilters()
             isLoading = false
         }
+    }
+
+    fun applyFilters() {
+        var result = dataBooks
+
+        if (_searchQuery.isNotBlank()) {
+            val query = _searchQuery.lowercase()
+            result = result.filter {
+                it.name.lowercase().contains(query) ||
+                it.content.lowercase().contains(query) ||
+                it.tags.lowercase().contains(query)
+            }
+        }
+
+        if (_selectedTag != null) {
+            result = result.filter { it.tags.contains(_selectedTag!!) }
+        }
+
+        result = when (sortType) {
+            DataBookSortType.DEFAULT -> {
+                if (sortOrder == SortOrder.DESC) {
+                    result.sortedByDescending { it.createdAt }
+                } else {
+                    result.sortedBy { it.createdAt }
+                }
+            }
+            DataBookSortType.TIME -> {
+                if (sortOrder == SortOrder.DESC) {
+                    result.sortedByDescending { it.createdAt }
+                } else {
+                    result.sortedBy { it.createdAt }
+                }
+            }
+            DataBookSortType.NAME -> {
+                if (sortOrder == SortOrder.DESC) {
+                    result.sortedByDescending { it.name }
+                } else {
+                    result.sortedBy { it.name }
+                }
+            }
+        }
+
+        filteredDataBooks = result
+    }
+
+    fun updateSortType(type: DataBookSortType) {
+        sortType = type
+        applyFilters()
+    }
+
+    fun toggleSortOrder() {
+        sortOrder = if (sortOrder == SortOrder.ASC) SortOrder.DESC else SortOrder.ASC
+        applyFilters()
     }
 
     fun getDataBookById(id: Long) {
@@ -42,15 +109,15 @@ class DataBookViewModel @Inject constructor(
         }
     }
 
-    fun addDataBook(notebookName: String, attributeName: String, attributeValues: String, onSuccess: () -> Unit) {
+    fun addDataBook(name: String, content: String, tags: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             error = null
             val success = dataBookRepository.addDataBook(
                 DataBook(
-                    notebookName = notebookName,
-                    attributeName = attributeName,
-                    attributeValues = attributeValues
+                    name = name,
+                    content = content,
+                    tags = tags
                 )
             ) != null
             if (success) {
@@ -63,7 +130,7 @@ class DataBookViewModel @Inject constructor(
         }
     }
 
-    fun updateDataBook(id: Long, notebookName: String, attributeName: String, attributeValues: String, onSuccess: () -> Unit) {
+    fun updateDataBook(id: Long, name: String, content: String, tags: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             error = null
@@ -71,9 +138,9 @@ class DataBookViewModel @Inject constructor(
             if (existingDataBook != null) {
                 val success = dataBookRepository.updateDataBook(
                     existingDataBook.copy(
-                        notebookName = notebookName,
-                        attributeName = attributeName,
-                        attributeValues = attributeValues
+                        name = name,
+                        content = content,
+                        tags = tags
                     )
                 )
                 if (success) {
@@ -119,7 +186,19 @@ class DataBookViewModel @Inject constructor(
         }
     }
 
-    fun getNotebookNames(): List<String> {
-        return dataBooks.map { it.notebookName }.distinct()
+    fun getTags(): List<String> {
+        return dataBooks.flatMap { it.tags.split(",").map { tag -> tag.trim() } }
+            .filter { it.isNotBlank() }
+            .distinct()
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery = query
+        applyFilters()
+    }
+
+    fun setSelectedTag(tag: String?) {
+        _selectedTag = tag
+        applyFilters()
     }
 }

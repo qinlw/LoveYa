@@ -11,14 +11,8 @@ interface DataBookDao {
     @Insert
     suspend fun insert(dataBook: DataBook): Long
 
-    @Query("SELECT * FROM data_book ORDER BY notebook_name, attribute_name")
+    @Query("SELECT * FROM data_book ORDER BY name")
     suspend fun getAll(): List<DataBook>
-
-    @Query("SELECT * FROM data_book WHERE notebook_name = :notebookName ORDER BY attribute_name")
-    suspend fun findByNotebookName(notebookName: String): List<DataBook>
-
-    @Query("SELECT * FROM data_book WHERE attribute_name = :attributeName ORDER BY notebook_name")
-    suspend fun findByAttributeName(attributeName: String): List<DataBook>
 
     @Query("SELECT * FROM data_book WHERE id = :id LIMIT 1")
     suspend fun findById(id: Long): DataBook?
@@ -28,9 +22,6 @@ interface DataBookDao {
 
     @Query("DELETE FROM data_book WHERE id = :id")
     suspend fun deleteById(id: Long)
-
-    @Query("DELETE FROM data_book WHERE notebook_name = :notebookName")
-    suspend fun deleteByNotebookName(notebookName: String)
 
     @Insert
     suspend fun insertAll(dataBooks: List<DataBook>)

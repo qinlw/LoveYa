@@ -45,22 +45,6 @@ class DataBookRepository @Inject constructor(
         }
     }
 
-    suspend fun getDataBooksByNotebook(notebookName: String): List<DataBook> {
-        return try {
-            database.dataBookDao().findByNotebookName(notebookName)
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
-    suspend fun getDataBooksByAttributeName(attributeName: String): List<DataBook> {
-        return try {
-            database.dataBookDao().findByAttributeName(attributeName)
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
     suspend fun getDataBookById(id: Long): DataBook? {
         return try {
             database.dataBookDao().findById(id)

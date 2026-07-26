@@ -126,7 +126,7 @@ fun DataBookDetailScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = dataBook?.attributeName?.firstOrNull()?.toString() ?: "❤",
+                                text = dataBook?.name?.firstOrNull()?.toString() ?: "❤",
                                 fontSize = 48.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
@@ -136,7 +136,7 @@ fun DataBookDetailScreen(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Text(
-                            text = dataBook?.notebookName ?: "",
+                            text = "我们的回忆",
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                             fontWeight = FontWeight.Bold,
@@ -146,7 +146,7 @@ fun DataBookDetailScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Text(
-                            text = dataBook?.attributeName ?: "",
+                            text = dataBook?.name ?: "",
                             fontSize = 28.sp,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold,
@@ -168,7 +168,7 @@ fun DataBookDetailScreen(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "我们的回忆",
+                                text = "手册内容",
                                 fontSize = 16.sp,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                                 fontWeight = FontWeight.SemiBold
@@ -177,7 +177,7 @@ fun DataBookDetailScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = dataBook?.attributeValues ?: "",
+                                text = dataBook?.content ?: "",
                                 fontSize = 18.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 textAlign = TextAlign.Center,

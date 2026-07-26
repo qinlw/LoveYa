@@ -13,14 +13,25 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
+enum class SortOrder {
+    ASC,
+    DESC
+}
+
 @HiltViewModel
 class DiaryViewModel @Inject constructor(
     private val diaryRepository: DiaryRepository
 ) : ViewModel() {
     var diaries by mutableStateOf<List<Diary>>(emptyList())
+    var filteredDiaries by mutableStateOf<List<Diary>>(emptyList())
     var currentDiary by mutableStateOf<Diary?>(null)
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
+    private var _searchQuery by mutableStateOf("")
+    private var _selectedTag by mutableStateOf<String?>(null)
+    var sortOrder by mutableStateOf(SortOrder.DESC)
+    val searchQuery get() = _searchQuery
+    val selectedTag get() = _selectedTag
 
     init {
         loadDiaries()
@@ -30,9 +41,35 @@ class DiaryViewModel @Inject constructor(
         viewModelScope.launch {
             isLoading = true
             error = null
-            diaries = diaryRepository.getAllDiaries().sortedByDescending { it.date }
+            diaries = diaryRepository.getAllDiaries()
+            applyFilters()
             isLoading = false
         }
+    }
+
+    fun applyFilters() {
+        var result = diaries
+
+        if (_searchQuery.isNotBlank()) {
+            val query = _searchQuery.lowercase()
+            result = result.filter {
+                it.notebookName.lowercase().contains(query) ||
+                it.content.lowercase().contains(query) ||
+                it.tags.lowercase().contains(query)
+            }
+        }
+
+        if (_selectedTag != null) {
+            result = result.filter { it.tags.contains(_selectedTag!!) }
+        }
+
+        result = if (sortOrder == SortOrder.DESC) {
+            result.sortedByDescending { it.createdAt }
+        } else {
+            result.sortedBy { it.createdAt }
+        }
+
+        filteredDiaries = result
     }
 
     fun getDiaryById(id: Long) {
@@ -123,11 +160,24 @@ class DiaryViewModel @Inject constructor(
         }
     }
 
-    fun getNotebookNames(): List<String> {
-        return diaries.map { it.notebookName }.distinct()
+    fun getTags(): List<String> {
+        return diaries.flatMap { it.tags.split(",").map { tag -> tag.trim() } }
+            .filter { it.isNotBlank() }
+            .distinct()
     }
 
-    fun getTags(): List<String> {
-        return diaries.flatMap { it.tags.split(",").map { tag -> tag.trim() } }.distinct()
+    fun setSearchQuery(query: String) {
+        _searchQuery = query
+        applyFilters()
+    }
+
+    fun setSelectedTag(tag: String?) {
+        _selectedTag = tag
+        applyFilters()
+    }
+
+    fun toggleSortOrder() {
+        sortOrder = if (sortOrder == SortOrder.ASC) SortOrder.DESC else SortOrder.ASC
+        applyFilters()
     }
 }

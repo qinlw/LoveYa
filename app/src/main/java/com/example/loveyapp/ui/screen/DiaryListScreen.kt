@@ -8,8 +8,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -23,7 +33,9 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.loveyapp.ui.component.DiaryCard
 import com.example.loveyapp.ui.viewmodel.DiaryViewModel
+import com.example.loveyapp.ui.viewmodel.SortOrder
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiaryListScreen(
     onNavigateToDetail: (Long) -> Unit,
@@ -34,10 +46,15 @@ fun DiaryListScreen(
     val viewModel: DiaryViewModel = hiltViewModel()
     val backStackEntry = navController.currentBackStackEntryAsState()
     val selectedIds = remember { mutableStateOf<Set<Long>>(emptySet()) }
+    val searchInput = remember { mutableStateOf("") }
 
     LaunchedEffect(backStackEntry.value) {
         viewModel.loadDiaries()
         selectedIds.value = emptySet()
+    }
+
+    LaunchedEffect(searchInput.value) {
+        viewModel.setSearchQuery(searchInput.value)
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -81,6 +98,47 @@ fun DiaryListScreen(
                         Text("取消")
                     }
                 }
+            } else {
+                IconButton(onClick = { viewModel.toggleSortOrder() }) {
+                    Icon(
+                        imageVector = if (viewModel.sortOrder == SortOrder.DESC) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                        contentDescription = if (viewModel.sortOrder == SortOrder.DESC) "降序" else "升序",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+
+        OutlinedTextField(
+            value = searchInput.value,
+            onValueChange = { searchInput.value = it },
+            label = { Text("搜索日记") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp),
+            singleLine = true
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, top = 12.dp, end = 16.dp)
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = viewModel.selectedTag == null,
+                onClick = { viewModel.setSelectedTag(null) },
+                label = { Text("全部") }
+            )
+            val tags = viewModel.getTags()
+            for (index in tags.indices) {
+                val tag = tags[index]
+                FilterChip(
+                    selected = viewModel.selectedTag == tag,
+                    onClick = { viewModel.setSelectedTag(tag) },
+                    label = { Text(tag) }
+                )
             }
         }
 
@@ -100,7 +158,7 @@ fun DiaryListScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 itemsIndexed(
-                    items = viewModel.diaries,
+                    items = viewModel.filteredDiaries,
                     key = { _, diary -> diary.id }
                 ) { index, diary ->
                     DiaryCard(
@@ -127,7 +185,7 @@ fun DiaryListScreen(
                     )
                 }
 
-                if (viewModel.diaries.isEmpty()) {
+                if (viewModel.filteredDiaries.isEmpty()) {
                     item(key = "empty_state") {
                         Column(
                             modifier = Modifier

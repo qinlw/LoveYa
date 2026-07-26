@@ -15,8 +15,7 @@ class DataBackupManager @Inject constructor(
 ) {
     fun exportDatabase(username: String, uri: Uri): Boolean {
         return try {
-            val dbPath = databaseFactory.getDefaultDatabasePath(username)
-            val dbFile = File(dbPath)
+            val dbFile = context.getDatabasePath("loveya_${username}.db")
             if (!dbFile.exists()) {
                 return false
             }
@@ -27,7 +26,7 @@ class DataBackupManager @Inject constructor(
             outputStream?.use { out ->
                 inputStream.use { input ->
                     val buffer = ByteArray(8192)
-                    var bytesRead: Int
+                    var bytesRead: Int = 0
                     while (input.read(buffer).also { bytesRead = it } != -1) {
                         out.write(buffer, 0, bytesRead)
                     }
@@ -44,13 +43,12 @@ class DataBackupManager @Inject constructor(
     fun importDatabase(username: String, uri: Uri): Boolean {
         return try {
             val inputStream = context.contentResolver.openInputStream(uri)
-            val dbPath = databaseFactory.getDefaultDatabasePath(username)
-            val dbFile = File(dbPath)
+            val dbFile = context.getDatabasePath("loveya_${username}.db")
 
             inputStream?.use { input ->
                 FileOutputStream(dbFile).use { out ->
                     val buffer = ByteArray(8192)
-                    var bytesRead: Int
+                    var bytesRead: Int = 0
                     while (input.read(buffer).also { bytesRead = it } != -1) {
                         out.write(buffer, 0, bytesRead)
                     }

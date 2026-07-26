@@ -10,6 +10,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.loveyapp.util.CalendarType
+import com.example.loveyapp.util.LunarCalendarUtil
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -44,19 +48,46 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun AddAnniversaryDialog(
     onDismiss: () -> Unit,
-    onSave: (name: String, date: String) -> Unit,
+    onSave: (name: String, date: String, calendarType: String) -> Unit,
     initialName: String = "",
-    initialDate: String = ""
+    initialDate: String = "",
+    initialCalendarType: String = "SOLAR"
 ) {
     val isEdit = initialName.isNotBlank() || initialDate.isNotBlank()
     var name by remember { mutableStateOf(initialName) }
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf(initialDate) }
+    var calendarType by remember { mutableStateOf(initialCalendarType) }
+    var displayDate by remember { mutableStateOf("") }
+    var alternateDate by remember { mutableStateOf("") }
+    LaunchedEffect(initialDate, initialCalendarType) {
+        if (initialDate.isNotBlank()) {
+            try {
+                val localDate = LocalDate.parse(initialDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                if (initialCalendarType == "SOLAR") {
+                    displayDate = initialDate
+                    alternateDate = LunarCalendarUtil.solarToLunar(localDate)
+                } else {
+                    displayDate = LunarCalendarUtil.solarToLunar(localDate)
+                    alternateDate = initialDate
+                }
+            } catch (e: Exception) {
+                displayDate = initialDate
+                alternateDate = ""
+            }
+        }
+    }
+
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = if (initialDate.isNotBlank()) {
             try {
-                LocalDate.parse(initialDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                    .atStartOfDay(ZoneId.systemDefault())
+                val localDate = LocalDate.parse(initialDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                if (initialCalendarType == "LUNAR") {
+                    val lunar = LunarCalendarUtil.solarToLunar(localDate.year, localDate.monthValue, localDate.dayOfMonth)
+                    LocalDate.of(lunar[0], lunar[1], lunar[2])
+                } else {
+                    localDate
+                }.atStartOfDay(ZoneId.systemDefault())
                     .toInstant()
                     .toEpochMilli()
             } catch (e: Exception) {
@@ -126,8 +157,66 @@ fun AddAnniversaryDialog(
                     singleLine = true
                 )
 
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                ) {
+                    Text(
+                        text = "日历类型",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        val types = CalendarType.values()
+                        for (index in types.indices) {
+                            val type = types[index]
+                            Button(
+                                onClick = {
+                                    calendarType = type.name
+                                    if (selectedDate.isNotBlank()) {
+                                        try {
+                                            val localDate = LocalDate.parse(selectedDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                                            if (type.name == "SOLAR") {
+                                                displayDate = selectedDate
+                                                alternateDate = LunarCalendarUtil.solarToLunar(localDate)
+                                            } else {
+                                                displayDate = LunarCalendarUtil.solarToLunar(localDate)
+                                                alternateDate = selectedDate
+                                            }
+                                        } catch (e: Exception) {
+                                            displayDate = selectedDate
+                                            alternateDate = ""
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = if (index == types.size - 1) 0.dp else 8.dp),
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = if (calendarType == type.name) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                    },
+                                    contentColor = if (calendarType == type.name) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                )
+                            ) {
+                                Text(if (type == CalendarType.SOLAR) "公历" else "农历")
+                            }
+                        }
+                    }
+                }
+
                 OutlinedTextField(
-                    value = selectedDate,
+                    value = displayDate,
                     onValueChange = {},
                     label = { Text("选择日期") },
                     modifier = Modifier
@@ -142,6 +231,15 @@ fun AddAnniversaryDialog(
                     singleLine = true
                 )
 
+                if (alternateDate.isNotBlank()) {
+                    Text(
+                        text = if (calendarType == "SOLAR") "农历: $alternateDate" else "公历: $alternateDate",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    )
+                }
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -154,7 +252,7 @@ fun AddAnniversaryDialog(
                     Button(
                         onClick = {
                             if (name.isNotBlank() && selectedDate.isNotBlank()) {
-                                onSave(name, selectedDate)
+                                onSave(name, selectedDate, calendarType)
                             }
                         },
                         enabled = name.isNotBlank() && selectedDate.isNotBlank(),
@@ -176,7 +274,22 @@ fun AddAnniversaryDialog(
                         val date = Instant.ofEpochMilli(millis)
                             .atZone(ZoneId.systemDefault())
                             .toLocalDate()
-                        selectedDate = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                        val formattedDate = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
+                        if (calendarType == "SOLAR") {
+                            selectedDate = formattedDate
+                            displayDate = formattedDate
+                            alternateDate = LunarCalendarUtil.solarToLunar(date)
+                        } else {
+                            val lunarYear = date.year
+                            val lunarMonth = date.monthValue
+                            val lunarDay = date.dayOfMonth
+                            val solarDate = LunarCalendarUtil.lunarToSolar(lunarYear, lunarMonth, lunarDay)
+                            val solarFormatted = solarDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                            selectedDate = solarFormatted
+                            displayDate = LunarCalendarUtil.solarToLunar(solarDate)
+                            alternateDate = solarFormatted
+                        }
                     }
                     showDatePicker = false
                 }) {

@@ -8,12 +8,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +49,8 @@ fun AttributeCard(
         animationSpec = spring(stiffness = Spring.StiffnessMedium)
     )
 
+    val tags = dataBook.tags.split(",").map { it.trim() }.filter { it.isNotBlank() }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -72,24 +76,49 @@ fun AttributeCard(
             )
     ) {
         Text(
-            text = dataBook.notebookName,
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.secondary,
+            text = dataBook.name,
+            fontSize = 18.sp,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold
         )
 
         Text(
-            text = dataBook.attributeName,
-            fontSize = 18.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 8.dp)
+            text = dataBook.content.take(50) + if (dataBook.content.length > 50) "..." else "",
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            modifier = Modifier.padding(top = 6.dp)
         )
 
-        Text(
-            text = dataBook.attributeValues,
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            modifier = Modifier.padding(top = 4.dp)
-        )
+        if (tags.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp)
+            ) {
+                for (tag in tags.take(3)) {
+                    Text(
+                        text = tag,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .background(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+                if (tags.size > 3) {
+                    Text(
+                        text = "+${tags.size - 3}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
+            }
+        }
     }
 }

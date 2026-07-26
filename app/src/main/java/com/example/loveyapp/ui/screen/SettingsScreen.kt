@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -11,7 +12,9 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,7 +35,6 @@ fun SettingsScreen(
     onExportData: ((Boolean) -> Unit) -> Unit = {},
     onImportData: ((Boolean) -> Unit) -> Unit = {},
     onSelectStoragePath: () -> Unit = {},
-    onStoragePathChanged: () -> Unit = {},
     onDataReload: () -> Unit = {},
     padding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues()
 ) {
@@ -40,11 +42,14 @@ fun SettingsScreen(
     val scrollState = rememberScrollState()
 
     var userBirthday by remember { mutableStateOf("") }
+    var userBirthdayCalendarType by remember { mutableStateOf("SOLAR") }
     var userGender by remember { mutableStateOf("保密") }
     var loverName by remember { mutableStateOf("") }
     var loverBirthday by remember { mutableStateOf("") }
+    var loverBirthdayCalendarType by remember { mutableStateOf("SOLAR") }
     var loverGender by remember { mutableStateOf("保密") }
     var anniversaryDate by remember { mutableStateOf("") }
+    var anniversaryCalendarType by remember { mutableStateOf("SOLAR") }
     var message by remember { mutableStateOf<String?>(null) }
 
 
@@ -89,7 +94,11 @@ fun SettingsScreen(
                 com.example.loveyapp.ui.component.DatePicker(
                     label = "生日",
                     selectedDate = userBirthday,
-                    onDateSelected = { userBirthday = it }
+                    calendarType = userBirthdayCalendarType,
+                    onDateSelected = { date, type ->
+                        userBirthday = date
+                        userBirthdayCalendarType = type
+                    }
                 )
 
                 Text(
@@ -128,7 +137,11 @@ fun SettingsScreen(
                 com.example.loveyapp.ui.component.DatePicker(
                     label = "爱人生日",
                     selectedDate = loverBirthday,
-                    onDateSelected = { loverBirthday = it }
+                    calendarType = loverBirthdayCalendarType,
+                    onDateSelected = { date, type ->
+                        loverBirthday = date
+                        loverBirthdayCalendarType = type
+                    }
                 )
 
                 Text(
@@ -159,7 +172,11 @@ fun SettingsScreen(
                 com.example.loveyapp.ui.component.DatePicker(
                     label = "开始日期",
                     selectedDate = anniversaryDate,
-                    onDateSelected = { anniversaryDate = it }
+                    calendarType = anniversaryCalendarType,
+                    onDateSelected = { date, type ->
+                        anniversaryDate = date
+                        anniversaryCalendarType = type
+                    }
                 )
             }
         }
@@ -183,12 +200,37 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.padding(top = 8.dp)
                 )
-                Text(
-                    text = viewModel.currentStoragePath,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = viewModel.currentStoragePath,
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .weight(1f)
+                    )
+                    TextButton(onClick = {
+                        try {
+                            val storagePath = viewModel.currentStoragePath
+                            val uri = android.net.Uri.parse(storagePath)
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+                            if (storagePath.startsWith("content://")) {
+                                intent.setDataAndType(uri, "vnd.android.document/directory")
+                                intent.flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            } else {
+                                intent.setDataAndType(android.net.Uri.fromFile(java.io.File(storagePath)), "vnd.android.document/directory")
+                            }
+                            navController.context.startActivity(intent)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }) {
+                        Text("打开")
+                    }
+                }
 
                 Button(
                     onClick = {

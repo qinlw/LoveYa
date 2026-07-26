@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.loveyapp.data.local.entity.AnniversaryConfig
 import com.example.loveyapp.data.repository.AnniversaryRepository
+import com.example.loveyapp.util.CalendarType
+import com.example.loveyapp.util.LunarCalendarUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -38,7 +40,7 @@ class AnniversaryViewModel @Inject constructor(
             error = null
             val configs = anniversaryRepository.getEnabledAnniversaries()
             anniversaries = configs.map { config ->
-                val daysRemaining = calculateDaysRemaining(config.targetDate)
+                val daysRemaining = calculateDaysRemaining(config.targetDate, config.calendarType)
                 AnniversaryWithDays(
                     config = config,
                     daysRemaining = daysRemaining,
@@ -49,15 +51,41 @@ class AnniversaryViewModel @Inject constructor(
         }
     }
 
-    fun calculateDaysRemaining(targetDate: String): Int {
+    fun calculateDaysRemaining(targetDate: String, calendarTypeStr: String): Int {
         return try {
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            val target = LocalDate.parse(targetDate, formatter)
+            val calendarType = CalendarType.valueOf(calendarTypeStr)
             val today = LocalDate.now()
+            var target: LocalDate
+
+            if (calendarType == CalendarType.LUNAR) {
+                val parsed = LunarCalendarUtil.parseLunarDate(targetDate)
+                if (parsed != null) {
+                    val (year, month, day) = parsed
+                    target = LunarCalendarUtil.lunarToSolar(today.year, month, day)
+                } else {
+                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                    target = LocalDate.parse(targetDate, formatter)
+                }
+            } else {
+                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                target = LocalDate.parse(targetDate, formatter)
+            }
+
             var remaining = ChronoUnit.DAYS.between(today, target).toInt()
 
             if (remaining < 0) {
-                remaining = ChronoUnit.DAYS.between(today, target.plusYears(1)).toInt()
+                if (calendarType == CalendarType.LUNAR) {
+                    val parsed = LunarCalendarUtil.parseLunarDate(targetDate)
+                    if (parsed != null) {
+                        val (_, month, day) = parsed
+                        target = LunarCalendarUtil.lunarToSolar(today.year + 1, month, day)
+                    } else {
+                        target = target.plusYears(1)
+                    }
+                } else {
+                    target = target.plusYears(1)
+                }
+                remaining = ChronoUnit.DAYS.between(today, target).toInt()
             }
             remaining
         } catch (e: Exception) {
@@ -65,7 +93,7 @@ class AnniversaryViewModel @Inject constructor(
         }
     }
 
-    fun addAnniversary(name: String, targetDate: String, onSuccess: () -> Unit) {
+    fun addAnniversary(name: String, targetDate: String, calendarType: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             error = null
@@ -73,6 +101,7 @@ class AnniversaryViewModel @Inject constructor(
                 AnniversaryConfig(
                     name = name,
                     targetDate = targetDate,
+                    calendarType = calendarType,
                     displayOrder = anniversaries.size,
                     enabled = true
                 )
@@ -87,7 +116,7 @@ class AnniversaryViewModel @Inject constructor(
         }
     }
 
-    fun updateAnniversary(id: Long, name: String, targetDate: String, onSuccess: () -> Unit) {
+    fun updateAnniversary(id: Long, name: String, targetDate: String, calendarType: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             error = null
@@ -96,6 +125,7 @@ class AnniversaryViewModel @Inject constructor(
                 val updated = existing.copy(
                     name = name,
                     targetDate = targetDate,
+                    calendarType = calendarType,
                     updatedAt = System.currentTimeMillis()
                 )
                 val success = anniversaryRepository.updateAnniversary(updated)

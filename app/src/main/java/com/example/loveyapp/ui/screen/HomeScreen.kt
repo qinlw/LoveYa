@@ -169,8 +169,8 @@ fun HomeScreen(
     if (showAddDialog) {
         AddAnniversaryDialog(
             onDismiss = { showAddDialog = false },
-            onSave = { name, date ->
-                anniversaryViewModel.addAnniversary(name, date) {
+            onSave = { name, date, calendarType ->
+                anniversaryViewModel.addAnniversary(name, date, calendarType) {
                     showAddDialog = false
                 }
             }
@@ -183,16 +183,17 @@ fun HomeScreen(
                 showEditDialog = false
                 editingAnniversary = null
             },
-            onSave = { name, date ->
+            onSave = { name, date, calendarType ->
                 editingAnniversary?.let { item ->
-                    anniversaryViewModel.updateAnniversary(item.config.id, name, date) {
+                    anniversaryViewModel.updateAnniversary(item.config.id, name, date, calendarType) {
                         showEditDialog = false
                         editingAnniversary = null
                     }
                 }
             },
             initialName = editingAnniversary!!.config.name,
-            initialDate = editingAnniversary!!.config.targetDate
+            initialDate = editingAnniversary!!.config.targetDate,
+            initialCalendarType = editingAnniversary!!.config.calendarType
         )
     }
 }
