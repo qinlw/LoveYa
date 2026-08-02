@@ -34,25 +34,36 @@ class DataImportService @Inject constructor(
             if (content == null) {
                 return ImportResult(success = false, message = "无法读取文件")
             }
-
-            val importData = gson.fromJson(String(content), ImportData::class.java)
-            if (importData.version != "1.0") {
-                return ImportResult(success = false, message = "不支持的备份版本")
-            }
-
-            if (importData.userInfo == null) {
-                return ImportResult(success = false, message = "备份数据中没有用户信息")
-            }
-
-            ImportResult(
-                success = true,
-                data = importData,
-                message = "解析成功"
-            )
+            parseImportData(String(content))
         } catch (e: Exception) {
             e.printStackTrace()
             ImportResult(success = false, message = "解析失败: ${e.message}")
         }
+    }
+
+    /**
+     * 云还原入口：直接从 JSON 字符串解析，不依赖 SAF。
+     * 与 [importFromFile] 共享 [parseImportData]，逻辑保持一致。
+     */
+    fun importFromJson(json: String): ImportResult {
+        return try {
+            parseImportData(json)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ImportResult(success = false, message = "解析失败: ${e.message}")
+        }
+    }
+
+    private fun parseImportData(json: String): ImportResult {
+        val importData = gson.fromJson(json, ImportData::class.java)
+            ?: return ImportResult(success = false, message = "备份数据为空")
+        if (importData.version != "1.0") {
+            return ImportResult(success = false, message = "不支持的备份版本")
+        }
+        if (importData.userInfo == null) {
+            return ImportResult(success = false, message = "备份数据中没有用户信息")
+        }
+        return ImportResult(success = true, data = importData, message = "解析成功")
     }
 
     suspend fun importToDatabase(username: String, importData: ImportData): Boolean {

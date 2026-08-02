@@ -25,6 +25,7 @@ import com.example.loveyapp.di.UserManagerEntryPoint
 import com.example.loveyapp.ui.screen.DataBookDetailScreen
 import com.example.loveyapp.ui.screen.DataBookEditScreen
 import com.example.loveyapp.ui.screen.DataBookListScreen
+import com.example.loveyapp.ui.screen.CloudBackupScreen
 import com.example.loveyapp.ui.screen.DiaryDetailScreen
 import com.example.loveyapp.ui.screen.DiaryEditScreen
 import com.example.loveyapp.ui.screen.DiaryListScreen
@@ -47,7 +48,8 @@ fun AppNavigator(
     onStoragePathChanged: () -> Unit = {},
     onExportData: ((Boolean) -> Unit) -> Unit = {},
     onImportData: ((Boolean) -> Unit) -> Unit = {},
-    onDataReload: () -> Unit = {}
+    onDataReload: () -> Unit = {},
+    onRestartApp: () -> Unit = {}
 ) {
     val authService = EntryPointAccessors.fromApplication(
         context,
@@ -185,6 +187,14 @@ fun AppNavigator(
                         padding = padding
                     )
             }
+        }
+
+        composable(NavRoutes.CloudBackup.route) {
+            CloudBackupScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onDataReload = onDataReload,
+                onRestartApp = onRestartApp
+            )
         }
     }
 }

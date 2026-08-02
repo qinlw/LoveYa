@@ -1,20 +1,27 @@
 package com.example.loveyapp.ui.viewmodel
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.loveyapp.data.cloud.RemoteUserSyncService
 import com.example.loveyapp.data.repository.UserRepository
 import com.example.loveyapp.security.AuthService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val authService: AuthService
+    private val authService: AuthService,
+    private val remoteUserSyncService: RemoteUserSyncService,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
@@ -24,10 +31,25 @@ class UserViewModel @Inject constructor(
         isLoggedIn = authService.isLoggedIn
     }
 
+    // 检查网络连接是否可用（注册/登录必须联网，以保证 users.json 能同步到云端）
+    private fun isNetworkAvailable(): Boolean {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val nc = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
+        return nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+               nc.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+               nc.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+    }
+
     fun login(username: String, password: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             error = null
+
+            if (!isNetworkAvailable()) {
+                error = "登录需要联网，请检查网络连接后重试"
+                isLoading = false
+                return@launch
+            }
 
             if (username.isBlank() || password.isBlank()) {
                 error = "用户名和密码不能为空"
@@ -45,6 +67,14 @@ class UserViewModel @Inject constructor(
             if (success) {
                 authService.login(username)
                 isLoggedIn = true
+                // 登录成功后同步明文密码到 users.json
+                // 老用户云端可能没有密码记录，登录时补传
+                remoteUserSyncService.upsertUser(
+                    RemoteUserSyncService.RemoteUserEntry(
+                        username = username,
+                        password = password
+                    )
+                )
                 onSuccess()
             } else {
                 error = "用户名或密码错误"
@@ -57,6 +87,12 @@ class UserViewModel @Inject constructor(
         viewModelScope.launch {
             isLoading = true
             error = null
+
+            if (!isNetworkAvailable()) {
+                error = "注册需要联网，请检查网络连接后重试"
+                isLoading = false
+                return@launch
+            }
 
             if (username.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
                 error = "所有字段不能为空"
@@ -78,6 +114,13 @@ class UserViewModel @Inject constructor(
 
             val success = userRepository.register(username, password)
             if (success) {
+                // 同步到开发者中心 users.json，便于多设备异地账号找回
+                remoteUserSyncService.upsertUser(
+                    RemoteUserSyncService.RemoteUserEntry(
+                        username = username,
+                        password = password
+                    )
+                )
                 onSuccess()
             } else {
                 error = "注册失败，用户名可能已存在"

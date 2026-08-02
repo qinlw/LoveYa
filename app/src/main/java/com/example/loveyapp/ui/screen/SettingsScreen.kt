@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.loveyapp.ui.component.GenderSelector
+import com.example.loveyapp.ui.navigation.NavRoutes
 import com.example.loveyapp.ui.viewmodel.SettingsViewModel
 
 @Composable
@@ -194,100 +195,14 @@ fun SettingsScreen(
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                 )
 
-                Text(
-                    text = "当前存储路径",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = viewModel.currentStoragePath,
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                        modifier = Modifier
-                            .padding(top = 4.dp)
-                            .weight(1f)
-                    )
-                    TextButton(onClick = {
-                        try {
-                            val storagePath = viewModel.currentStoragePath
-                            val uri = android.net.Uri.parse(storagePath)
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
-                            if (storagePath.startsWith("content://")) {
-                                intent.setDataAndType(uri, "vnd.android.document/directory")
-                                intent.flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            } else {
-                                intent.setDataAndType(android.net.Uri.fromFile(java.io.File(storagePath)), "vnd.android.document/directory")
-                            }
-                            navController.context.startActivity(intent)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }) {
-                        Text("打开")
-                    }
-                }
-
                 Button(
-                    onClick = {
-                        onSelectStoragePath()
-                        viewModel.refreshStoragePath()
-                    },
+                    onClick = { navController.navigate(NavRoutes.CloudBackup.route) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)
                 ) {
-                    Text("选择存储路径")
-                }
-
-                Button(
-                    onClick = {
-                        onExportData { success ->
-                            message = if (success) "导出成功" else "导出失败"
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)
-                ) {
-                    Text("导出数据")
-                }
-
-                Button(
-                    onClick = {
-                        onImportData { success ->
-                            message = if (success) "导入成功" else "导入失败"
-                            if (success) {
-                                onDataReload()
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)
-                ) {
-                    Text("导入数据")
-                }
-
-                Button(
-                    onClick = {
-                        onExportData { success ->
-                            message = if (success) "备份成功" else "备份失败"
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)
-                ) {
-                    Text("备份数据")
+                    Text("云备份")
                 }
             }
         }

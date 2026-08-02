@@ -105,6 +105,13 @@ class MainActivity : ComponentActivity() {
                         },
                         onDataReload = {
                             databaseFactory.closeAll()
+                        },
+                        onRestartApp = {
+                            databaseFactory.closeAll()
+                            val intent = Intent(this, MainActivity::class.java)
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+                            startActivity(intent)
+                            Runtime.getRuntime().exit(0)
                         }
                     )
                 }

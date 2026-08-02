@@ -36,7 +36,27 @@
 # Gson
 -keep class com.example.loveyapp.data.model.** { *; }
 -keep class com.example.loveyapp.data.entity.** { *; }
+-keep class com.example.loveyapp.data.local.entity.** { *; }
 -keep class com.example.loveyapp.data.export.** { *; }
+-keep class com.example.loveyapp.data.cloud.dto.** { *; }
+-keep class com.example.loveyapp.data.cloud.CloudBackupConfig { *; }
+-keep class com.example.loveyapp.data.cloud.RemoteUserSyncService { *; }
+-keep class com.example.loveyapp.data.cloud.RemoteUserSyncService$RemoteUserEntry { *; }
+-keep class com.example.loveyapp.data.service.DataExportService$ExportData { *; }
+-keep class com.example.loveyapp.data.service.DataImportService$ImportData { *; }
+-keep class com.example.loveyapp.data.service.DataImportService$ImportResult { *; }
+
+# Retrofit
+-keepattributes Exceptions
+-keep class retrofit2.** { *; }
+-keepclasseswithmembers class * {
+    @retrofit2.http.* <methods>;
+}
+-keep class okhttp3.** { *; }
+-keep class okhttp3.internal.** { *; }
+-keep interface okhttp3.** { *; }
+# 显式保留 API 接口泛型签名，防止 R8 裁剪导致反射类型解析失败
+-keep class com.example.loveyapp.data.cloud.GiteeApiService { *; }
 
 # Coroutines
 -keep class kotlinx.coroutines.** { *; }

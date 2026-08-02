@@ -34,7 +34,7 @@ object SingletonModule {
     @Provides
     @Singleton
     fun provideGson(): Gson {
-        return Gson()
+        return com.google.gson.GsonBuilder().setPrettyPrinting().create()
     }
 }
 

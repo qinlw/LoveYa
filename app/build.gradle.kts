@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -14,13 +16,24 @@ android {
         applicationId = "com.example.loveyapp"
         minSdk = 30
         targetSdk = 34
-        versionCode = 7
-        versionName = "1.0.7"
+        versionCode = 24
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // 读取 token.properties 中的开发者令牌配置
+        val localProps = Properties().apply {
+            val f = rootProject.file("token.properties")
+            if (f.exists()) load(f.inputStream())
+        }
+        buildConfigField(
+            "String",
+            "DEV_GITEE_TOKEN",
+            "\"${localProps.getProperty("DEV_GITEE_TOKEN", "")}\""
+        )
     }
 
     signingConfigs {
@@ -63,6 +76,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.11"
@@ -105,6 +119,12 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("androidx.documentfile:documentfile:1.0.1")
+
+    // 云备份：OkHttp + Retrofit
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito:mockito-core:5.8.0")
