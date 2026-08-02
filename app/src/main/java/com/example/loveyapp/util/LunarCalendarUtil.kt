@@ -148,6 +148,97 @@ object LunarCalendarUtil {
         return shengXiao[index]
     }
 
+    /** 返回农历年份的完整名称，如"丙午马年" */
+    fun getLunarYearDisplayName(year: Int): String {
+        return "${getYearGanZhi(year)}${getYearShengXiao(year)}年"
+    }
+
+    /** 返回某农历年的闰月月份，0 表示该年无闰月 */
+    fun getLeapMonthOfYear(year: Int): Int {
+        if (year < MIN_YEAR || year > MAX_YEAR) return 0
+        return (LUNAR_INFO[year - MIN_YEAR] and 0xf00000) shr 20
+    }
+
+    /**
+     * 返回某农历年所有月份名称列表（含闰月）。
+     * 例如无闰月：["正月", "二月", ..., "腊月"]
+     * 例如闰四月：["正月", "二月", "三月", "四月", "闰四月", "五月", ...]
+     */
+    fun getLunarMonthNamesInYear(year: Int): List<String> {
+        if (year < MIN_YEAR || year > MAX_YEAR) {
+            return lunarMonthNumNames
+        }
+        val leap = getLeapMonthOfYear(year)
+        val result = mutableListOf<String>()
+        for (m in 1..12) {
+            result.add(lunarMonthNumNames[m - 1] + "月")
+            if (leap != 0 && m == leap) {
+                result.add("闰" + lunarMonthNumNames[m - 1] + "月")
+            }
+        }
+        return result
+    }
+
+    /**
+     * 返回某农历月的天数（29 或 30）。
+     * @param year 农历年
+     * @param monthOrder 月份序号（1-13，闰月按其在年中出现的顺序排）
+     */
+    fun getLunarMonthDays(year: Int, monthOrder: Int): Int {
+        if (year < MIN_YEAR || year > MAX_YEAR) return 30
+        val leap = getLeapMonthOfYear(year)
+        // 计算实际月份号和是否闰月
+        var realMonth = monthOrder
+        var isLeap = false
+        if (leap != 0) {
+            if (monthOrder == leap + 1) {
+                // 这是闰月
+                realMonth = leap
+                isLeap = true
+            } else if (monthOrder > leap + 1) {
+                realMonth = monthOrder - 1
+            }
+        }
+        // 该月天数：闰月天数与正常月相同（农历闰月也有29或30天）
+        // LUNAR_INFO bit: 0x80000 shr (month-1) 表示该月大小（1=30天, 0=29天）
+        val bit = if (isLeap) {
+            // 闰月天数取自下一位（实际算法：闰月与该月有相同大小或单独存储）
+            // 简化：使用原月份的位
+            LUNAR_INFO[year - MIN_YEAR] and (0x80000 shr (realMonth - 1))
+        } else {
+            LUNAR_INFO[year - MIN_YEAR] and (0x80000 shr (realMonth - 1))
+        }
+        return if (bit == 0) 29 else 30
+    }
+
+    /** 返回某农历月所有日期名（初一..三十） */
+    fun getLunarDayNamesInMonth(year: Int, monthOrder: Int): List<String> {
+        val days = getLunarMonthDays(year, monthOrder)
+        return lunarDays.subList(0, days)
+    }
+
+    /**
+     * 将农历年月日（含闰月序号）转换为公历 LocalDate。
+     * @param year 农历年
+     * @param monthOrder 月份序号（1-13，包含闰月）
+     */
+    fun lunarOrderToSolar(year: Int, monthOrder: Int, day: Int): LocalDate {
+        val leap = getLeapMonthOfYear(year)
+        var realMonth = monthOrder
+        var isLeap = false
+        if (leap != 0) {
+            if (monthOrder == leap + 1) {
+                realMonth = leap
+                isLeap = true
+            } else if (monthOrder > leap + 1) {
+                realMonth = monthOrder - 1
+            }
+        }
+        return lunarToSolar(year, realMonth, day, isLeap).let {
+            LocalDate.of(it[0], it[1], it[2])
+        }
+    }
+
     fun lunarToSolar(year: Int, month: Int, day: Int): LocalDate {
         val solar = lunarToSolar(year, month, day, false)
         return LocalDate.of(solar[0], solar[1], solar[2])

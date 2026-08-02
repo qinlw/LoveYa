@@ -45,6 +45,8 @@ fun DataBookEditScreen(
         tags = dataBook.tags
     }
 
+    var saveMessage by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
             text = if (dataBookId != null) "编辑手册" else "新手册",
@@ -97,9 +99,15 @@ fun DataBookEditScreen(
             Button(
                 onClick = {
                     if (dataBookId != null) {
-                        viewModel.updateDataBook(dataBookId, name, content, tags, onSaveSuccess)
+                        viewModel.updateDataBook(dataBookId, name, content, tags) {
+                            saveMessage = "保存成功"
+                            onSaveSuccess()
+                        }
                     } else {
-                        viewModel.addDataBook(name, content, tags, onSaveSuccess)
+                        viewModel.addDataBook(name, content, tags) {
+                            saveMessage = "保存成功"
+                            onSaveSuccess()
+                        }
                     }
                 },
                 modifier = Modifier
@@ -120,4 +128,11 @@ fun DataBookEditScreen(
             }
         }
     }
+
+    // 屏幕正中悬浮提示
+    com.example.loveyapp.ui.component.ToastPopup(
+        message = saveMessage,
+        isSuccess = true,
+        onDismiss = { saveMessage = null }
+    )
 }

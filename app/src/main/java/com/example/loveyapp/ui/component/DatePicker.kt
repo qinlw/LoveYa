@@ -121,39 +121,50 @@ fun DatePicker(
     }
 
     if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val date = Instant.ofEpochMilli(millis)
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate()
-                        val formattedDate = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                        selectedDateValue = formattedDate
-                        
-                        if (currentCalendarType == "SOLAR") {
+        if (currentCalendarType == "LUNAR") {
+            // 农历模式：使用真正的农历日期选择器（年/月/日 三列）
+            LunarDatePickerDialog(
+                initialSolarDate = selectedDateValue.ifBlank {
+                    java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                },
+                onConfirm = { lunarDisplay, solarFormatted ->
+                    selectedDateValue = solarFormatted
+                    displayDateValue = lunarDisplay
+                    alternateDateValue = solarFormatted
+                    onDateSelected(solarFormatted, currentCalendarType)
+                    showDatePicker = false
+                },
+                onDismiss = { showDatePicker = false }
+            )
+        } else {
+            // 公历模式：使用 Material3 公历选择器
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val date = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                            val formattedDate = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                            selectedDateValue = formattedDate
                             displayDateValue = formattedDate
                             alternateDateValue = LunarCalendarUtil.solarToLunar(date)
-                        } else {
-                            displayDateValue = LunarCalendarUtil.solarToLunar(date)
-                            alternateDateValue = formattedDate
+                            onDateSelected(formattedDate, currentCalendarType)
                         }
-                        
-                        onDateSelected(formattedDate, currentCalendarType)
+                        showDatePicker = false
+                    }) {
+                        Text("确认")
                     }
-                    showDatePicker = false
-                }) {
-                    Text("确认")
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDatePicker = false }) {
+                        Text("取消")
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("取消")
-                }
+            ) {
+                androidx.compose.material3.DatePicker(state = datePickerState)
             }
-        ) {
-            androidx.compose.material3.DatePicker(state = datePickerState)
         }
     }
 }

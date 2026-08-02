@@ -22,7 +22,7 @@ class DataExportService @Inject constructor(
 ) {
 
     data class ExportData(
-        @SerializedName("version") val version: String = "1.0",
+        @SerializedName("version") val version: String = "1.2",
         @SerializedName("exportDate") val exportDate: String,
         @SerializedName("userInfo") val userInfo: UserInfo?,
         @SerializedName("diaries") val diaries: List<Diary>,

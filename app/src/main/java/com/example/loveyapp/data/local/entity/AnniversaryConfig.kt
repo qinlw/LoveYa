@@ -23,6 +23,10 @@ data class AnniversaryConfig(
     @SerializedName("calendarType")
     val calendarType: String = "SOLAR",
 
+    @ColumnInfo(name = "display_mode")
+    @SerializedName("displayMode")
+    val displayMode: String = "BOTH",
+
     @ColumnInfo(name = "display_order")
     @SerializedName("displayOrder")
     val displayOrder: Int = 0,
@@ -30,6 +34,10 @@ data class AnniversaryConfig(
     @ColumnInfo(name = "enabled")
     @SerializedName("enabled")
     val enabled: Boolean = true,
+
+    @ColumnInfo(name = "show_year")
+    @SerializedName("showYear")
+    val showYear: Boolean = true,
 
     @ColumnInfo(name = "created_at")
     @SerializedName("createdAt")

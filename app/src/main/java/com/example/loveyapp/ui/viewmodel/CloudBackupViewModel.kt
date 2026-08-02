@@ -74,17 +74,9 @@ class CloudBackupViewModel @Inject constructor(
                 is GiteeCloudBackupService.Result.Success -> {
                     refreshBindingState()
                     // 同步该用户的 Gitee 绑定信息到开发者中心 users.json
-                    // 密码字段留空，将保留云端原值
                     val username = authService.currentUsername
                     if (!username.isNullOrBlank()) {
-                        remoteUserSyncService.upsertUser(
-                            RemoteUserSyncService.RemoteUserEntry(
-                                username = username,
-                                password = "",
-                                giteeRepoUrl = cleanUrl,
-                                giteeAccessToken = cleanToken
-                            )
-                        )
+                        syncUserToRemote(username)
                     }
                     state = state.copy(isLoading = false, message = "绑定成功", isError = false)
                 }

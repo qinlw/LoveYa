@@ -20,6 +20,9 @@ interface UserInfoDao {
     @Update
     suspend fun update(userInfo: UserInfo)
 
+    @Query("UPDATE user_info SET username = :newUsername WHERE username = :oldUsername")
+    suspend fun updateUsername(oldUsername: String, newUsername: String)
+
     @Query("DELETE FROM user_info WHERE id = :id")
     suspend fun deleteById(id: Long)
 }

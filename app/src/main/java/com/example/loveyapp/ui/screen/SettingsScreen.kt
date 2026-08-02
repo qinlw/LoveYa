@@ -1,5 +1,6 @@
 package com.example.loveyapp.ui.screen
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +28,7 @@ import androidx.navigation.NavController
 import com.example.loveyapp.ui.component.GenderSelector
 import com.example.loveyapp.ui.navigation.NavRoutes
 import com.example.loveyapp.ui.viewmodel.SettingsViewModel
+import com.example.loveyapp.util.DisplayCalendarMode
 
 @Composable
 fun SettingsScreen(
@@ -44,6 +46,7 @@ fun SettingsScreen(
 
     var userBirthday by remember { mutableStateOf("") }
     var userBirthdayCalendarType by remember { mutableStateOf("SOLAR") }
+    var myName by remember { mutableStateOf("") }
     var userGender by remember { mutableStateOf("保密") }
     var loverName by remember { mutableStateOf("") }
     var loverBirthday by remember { mutableStateOf("") }
@@ -58,6 +61,7 @@ fun SettingsScreen(
     androidx.compose.runtime.LaunchedEffect(viewModel.userInfo) {
         viewModel.userInfo?.let { info ->
             userBirthday = info.userBirthday
+            myName = info.myName
             userGender = info.userGender.ifEmpty { "保密" }
             loverName = info.loverName
             loverBirthday = info.loverBirthday
@@ -100,6 +104,16 @@ fun SettingsScreen(
                         userBirthday = date
                         userBirthdayCalendarType = type
                     }
+                )
+
+                OutlinedTextField(
+                    value = myName,
+                    onValueChange = { myName = it },
+                    label = { Text("我的姓名") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    singleLine = true
                 )
 
                 Text(
@@ -189,6 +203,61 @@ fun SettingsScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
+                    text = "显示偏好",
+                    fontSize = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+
+                Text(
+                    text = "日期显示方式",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val modes = DisplayCalendarMode.values()
+                    for (index in modes.indices) {
+                        val mode = modes[index]
+                        val label = when (mode) {
+                            DisplayCalendarMode.SOLAR_ONLY -> "只公历"
+                            DisplayCalendarMode.LUNAR_ONLY -> "只农历"
+                            DisplayCalendarMode.BOTH -> "两者都"
+                        }
+                        Button(
+                            onClick = { viewModel.saveDisplayCalendarMode(mode) },
+                            modifier = Modifier.weight(1f),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = if (viewModel.displayCalendarMode == mode) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                },
+                                contentColor = if (viewModel.displayCalendarMode == mode) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
+            }
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
                     text = "数据管理",
                     fontSize = 18.sp,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -229,6 +298,30 @@ fun SettingsScreen(
                 ) {
                     Text("切换用户")
                 }
+
+                Button(
+                    onClick = { navController.navigate(NavRoutes.EditAccount.route) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp)
+                ) {
+                    Text("修改账号")
+                }
+
+                // 开发者入口（隐蔽，点击后需输入开发者密码）
+                Button(
+                    onClick = { navController.navigate(NavRoutes.Developer.route) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(12.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    )
+                ) {
+                    Text("开发者", fontSize = 12.sp)
+                }
             }
         }
 
@@ -251,6 +344,7 @@ fun SettingsScreen(
         Button(
             onClick = {
                 viewModel.updateUserInfo(
+                    myName,
                     userBirthday,
                     userGender,
                     loverName,

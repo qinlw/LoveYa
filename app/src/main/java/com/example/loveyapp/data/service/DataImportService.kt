@@ -57,8 +57,9 @@ class DataImportService @Inject constructor(
     private fun parseImportData(json: String): ImportResult {
         val importData = gson.fromJson(json, ImportData::class.java)
             ?: return ImportResult(success = false, message = "备份数据为空")
-        if (importData.version != "1.0") {
-            return ImportResult(success = false, message = "不支持的备份版本")
+        // 兼容所有 1.x 版本的备份数据（导出端版本号与 APK 版本无关，仅随 JSON 结构变更递增）
+        if (!importData.version.startsWith("1.")) {
+            return ImportResult(success = false, message = "不支持的备份版本: ${importData.version}")
         }
         if (importData.userInfo == null) {
             return ImportResult(success = false, message = "备份数据中没有用户信息")

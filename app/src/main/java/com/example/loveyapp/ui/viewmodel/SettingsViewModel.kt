@@ -6,8 +6,10 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.loveyapp.data.local.entity.UserInfo
+import com.example.loveyapp.data.prefs.DisplaySettingsStore
 import com.example.loveyapp.data.repository.UserRepository
 import com.example.loveyapp.security.AuthService
+import com.example.loveyapp.util.DisplayCalendarMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -16,15 +18,27 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val authService: AuthService,
-    private val dataBackupManager: com.example.loveyapp.data.service.DataBackupManager
+    private val dataBackupManager: com.example.loveyapp.data.service.DataBackupManager,
+    private val displaySettingsStore: DisplaySettingsStore
 ) : ViewModel() {
     var userInfo by mutableStateOf<UserInfo?>(null)
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
     var currentStoragePath by mutableStateOf("")
+    var displayCalendarMode by mutableStateOf(DisplayCalendarMode.BOTH)
 
     init {
         loadUserInfo()
+        loadDisplayCalendarMode()
+    }
+
+    private fun loadDisplayCalendarMode() {
+        displayCalendarMode = displaySettingsStore.getDisplayCalendarMode()
+    }
+
+    fun saveDisplayCalendarMode(mode: DisplayCalendarMode) {
+        displaySettingsStore.saveDisplayCalendarMode(mode)
+        displayCalendarMode = mode
     }
 
     fun loadUserInfo() {
@@ -45,6 +59,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun updateUserInfo(
+        myName: String,
         userBirthday: String,
         userGender: String,
         loverName: String,
@@ -59,6 +74,7 @@ class SettingsViewModel @Inject constructor(
             val username = authService.currentUsername
             if (username != null && userInfo != null) {
                 val updatedUserInfo = userInfo!!.copy(
+                    myName = myName,
                     userBirthday = userBirthday,
                     userGender = userGender,
                     loverName = loverName,

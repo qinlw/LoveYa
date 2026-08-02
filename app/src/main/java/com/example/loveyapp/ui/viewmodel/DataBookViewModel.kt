@@ -156,6 +156,60 @@ class DataBookViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 仅更新数据手册的 content 字段（详情页直接编辑后保存）。
+     * name 和 tags 保留原值，同时刷新 currentDataBook。
+     */
+    fun updateDataBookContent(id: Long, content: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            isLoading = true
+            error = null
+            val existingDataBook = dataBookRepository.getDataBookById(id)
+            if (existingDataBook != null) {
+                val success = dataBookRepository.updateDataBook(
+                    existingDataBook.copy(content = content)
+                )
+                if (success) {
+                    currentDataBook = existingDataBook.copy(content = content)
+                    loadDataBooks()
+                    onSuccess()
+                } else {
+                    error = "更新失败"
+                }
+            } else {
+                error = "数据不存在"
+            }
+            isLoading = false
+        }
+    }
+
+    /**
+     * 同时更新数据手册的 name 和 content 字段（详情页直接编辑名称和内容后保存）。
+     * tags 保留原值，同时刷新 currentDataBook。
+     */
+    fun updateDataBookNameAndContent(id: Long, name: String, content: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            isLoading = true
+            error = null
+            val existingDataBook = dataBookRepository.getDataBookById(id)
+            if (existingDataBook != null) {
+                val success = dataBookRepository.updateDataBook(
+                    existingDataBook.copy(name = name, content = content)
+                )
+                if (success) {
+                    currentDataBook = existingDataBook.copy(name = name, content = content)
+                    loadDataBooks()
+                    onSuccess()
+                } else {
+                    error = "更新失败"
+                }
+            } else {
+                error = "数据不存在"
+            }
+            isLoading = false
+        }
+    }
+
     fun deleteDataBook(id: Long, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true

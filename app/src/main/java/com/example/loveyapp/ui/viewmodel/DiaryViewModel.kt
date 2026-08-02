@@ -130,6 +130,33 @@ class DiaryViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 同时更新日记的标题和内容字段（详情页直接编辑后保存）。
+     * tags 保留原值，同时刷新 currentDiary。
+     */
+    fun updateDiaryContentAndTitle(id: Long, notebookName: String, content: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            isLoading = true
+            error = null
+            val existingDiary = diaryRepository.getDiaryById(id)
+            if (existingDiary != null) {
+                val success = diaryRepository.updateDiary(
+                    existingDiary.copy(notebookName = notebookName, content = content)
+                )
+                if (success) {
+                    currentDiary = existingDiary.copy(notebookName = notebookName, content = content)
+                    loadDiaries()
+                    onSuccess()
+                } else {
+                    error = "更新失败"
+                }
+            } else {
+                error = "日记不存在"
+            }
+            isLoading = false
+        }
+    }
+
     fun deleteDiary(id: Long, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true

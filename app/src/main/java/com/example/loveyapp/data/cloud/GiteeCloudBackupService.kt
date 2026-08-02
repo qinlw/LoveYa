@@ -92,8 +92,10 @@ class GiteeCloudBackupService @Inject constructor(
     }
 
     /**
-     * 上传备份：将 JSON 内容写入云端按用户区分的路径 `backups/{username}/loveya_backup.json`。
+     * 上传备份：将 JSON 内容写入云端按用户名区分的路径 `backups/{username}/loveya_backup.json`。
      * 成功后更新 last_backup_time。
+     *
+     * @param username 用户名（作为云端备份路径的唯一标识）
      */
     suspend fun uploadBackup(username: String, jsonContent: String): Result<Unit> {
         if (jsonContent.isEmpty()) {
@@ -166,7 +168,9 @@ class GiteeCloudBackupService @Inject constructor(
     }
 
     /**
-     * 下载备份：从云端按用户区分的路径 `backups/{username}/loveya_backup.json` 拉取 JSON 字符串。
+     * 下载备份：从云端按用户名区分的路径 `backups/{username}/loveya_backup.json` 拉取 JSON 字符串。
+     *
+     * @param username 用户名（作为云端备份路径的唯一标识）
      */
     suspend fun downloadBackup(username: String): Result<String> {
         val config = configStore.getConfig()

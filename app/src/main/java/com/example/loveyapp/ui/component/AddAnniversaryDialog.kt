@@ -9,9 +9,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -20,6 +22,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -38,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.loveyapp.util.CalendarType
+import com.example.loveyapp.util.DisplayCalendarMode
 import com.example.loveyapp.util.LunarCalendarUtil
 import java.time.Instant
 import java.time.LocalDate
@@ -48,16 +52,20 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun AddAnniversaryDialog(
     onDismiss: () -> Unit,
-    onSave: (name: String, date: String, calendarType: String) -> Unit,
+    onSave: (name: String, date: String, calendarType: String, displayMode: String, showYear: Boolean) -> Unit,
     initialName: String = "",
     initialDate: String = "",
-    initialCalendarType: String = "SOLAR"
+    initialCalendarType: String = "SOLAR",
+    initialDisplayMode: String = DisplayCalendarMode.BOTH.value,
+    initialShowYear: Boolean = true
 ) {
     val isEdit = initialName.isNotBlank() || initialDate.isNotBlank()
     var name by remember { mutableStateOf(initialName) }
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf(initialDate) }
     var calendarType by remember { mutableStateOf(initialCalendarType) }
+    var displayMode by remember { mutableStateOf(initialDisplayMode) }
+    var showYear by remember { mutableStateOf(initialShowYear) }
     var displayDate by remember { mutableStateOf("") }
     var alternateDate by remember { mutableStateOf("") }
     LaunchedEffect(initialDate, initialCalendarType) {
@@ -81,13 +89,10 @@ fun AddAnniversaryDialog(
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = if (initialDate.isNotBlank()) {
             try {
-                val localDate = LocalDate.parse(initialDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                if (initialCalendarType == "LUNAR") {
-                    val lunar = LunarCalendarUtil.solarToLunar(localDate.year, localDate.monthValue, localDate.dayOfMonth)
-                    LocalDate.of(lunar[0], lunar[1], lunar[2])
-                } else {
-                    localDate
-                }.atStartOfDay(ZoneId.systemDefault())
+                // 数据库存的始终是公历日期（yyyy-MM-dd），无论 calendarType 是 SOLAR 还是 LUNAR
+                // 选择器永远基于公历显示，calendarType 只影响保存后的展示方式
+                LocalDate.parse(initialDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                    .atStartOfDay(ZoneId.systemDefault())
                     .toInstant()
                     .toEpochMilli()
             } catch (e: Exception) {
@@ -215,6 +220,51 @@ fun AddAnniversaryDialog(
                     }
                 }
 
+                // 显示偏好按钮组：只公历 / 只农历 / 两者都
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                ) {
+                    Text(
+                        text = "显示偏好",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val modes = DisplayCalendarMode.values()
+                        for (mode in modes) {
+                            val label = when (mode) {
+                                DisplayCalendarMode.SOLAR_ONLY -> "只公历"
+                                DisplayCalendarMode.LUNAR_ONLY -> "只农历"
+                                DisplayCalendarMode.BOTH -> "两者都"
+                            }
+                            Button(
+                                onClick = { displayMode = mode.value },
+                                modifier = Modifier.weight(1f),
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = if (displayMode == mode.value) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceVariant
+                                    },
+                                    contentColor = if (displayMode == mode.value) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                )
+                            ) {
+                                Text(label)
+                            }
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = displayDate,
                     onValueChange = {},
@@ -230,6 +280,25 @@ fun AddAnniversaryDialog(
                     },
                     singleLine = true
                 )
+
+                // 显示年份开关：控制日期显示时是否包含年份
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "显示年份",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Switch(
+                        checked = showYear,
+                        onCheckedChange = { showYear = it }
+                    )
+                }
 
                 if (alternateDate.isNotBlank()) {
                     Text(
@@ -252,7 +321,7 @@ fun AddAnniversaryDialog(
                     Button(
                         onClick = {
                             if (name.isNotBlank() && selectedDate.isNotBlank()) {
-                                onSave(name, selectedDate, calendarType)
+                                onSave(name, selectedDate, calendarType, displayMode, showYear)
                             }
                         },
                         enabled = name.isNotBlank() && selectedDate.isNotBlank(),
@@ -266,43 +335,56 @@ fun AddAnniversaryDialog(
     }
 
     if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val date = Instant.ofEpochMilli(millis)
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate()
-                        val formattedDate = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-
-                        if (calendarType == "SOLAR") {
-                            selectedDate = formattedDate
-                            displayDate = formattedDate
-                            alternateDate = LunarCalendarUtil.solarToLunar(date)
-                        } else {
-                            val lunarYear = date.year
-                            val lunarMonth = date.monthValue
-                            val lunarDay = date.dayOfMonth
-                            val solarDate = LunarCalendarUtil.lunarToSolar(lunarYear, lunarMonth, lunarDay)
-                            val solarFormatted = solarDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                            selectedDate = solarFormatted
-                            displayDate = LunarCalendarUtil.solarToLunar(solarDate)
-                            alternateDate = solarFormatted
-                        }
-                    }
+        if (calendarType == "LUNAR") {
+            // 农历模式：使用真正的农历日期选择器
+            LunarDatePickerDialog(
+                initialSolarDate = selectedDate.ifBlank {
+                    java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                },
+                onConfirm = { lunarDisplay, solarFormatted ->
+                    selectedDate = solarFormatted
+                    displayDate = lunarDisplay
+                    alternateDate = solarFormatted
                     showDatePicker = false
-                }) {
-                    Text("确认")
+                },
+                onDismiss = { showDatePicker = false }
+            )
+        } else {
+            // 公历模式：使用 Material3 公历选择器
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val date = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                            val formattedDate = date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+
+                            // 选择器选择的永远是公历日期（yyyy-MM-dd），与 calendarType 无关
+                            // calendarType 仅控制显示：SOLAR 显示公历，LUNAR 显示农历
+                            selectedDate = formattedDate
+                            if (calendarType == "SOLAR") {
+                                displayDate = formattedDate
+                                alternateDate = LunarCalendarUtil.solarToLunar(date)
+                            } else {
+                                displayDate = LunarCalendarUtil.solarToLunar(date)
+                                alternateDate = formattedDate
+                            }
+                        }
+                        showDatePicker = false
+                    }) {
+                        Text("确认")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDatePicker = false }) {
+                        Text("取消")
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("取消")
-                }
+            ) {
+                DatePicker(state = datePickerState)
             }
-        ) {
-            DatePicker(state = datePickerState)
         }
     }
 }

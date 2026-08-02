@@ -28,7 +28,7 @@ fun BottomNavBar(navController: NavController, currentRoute: String) {
             NavItem(NavRoutes.Home, "首页", R.drawable.ic_home),
             NavItem(NavRoutes.DiaryList, "日记", R.drawable.ic_diary),
             NavItem(NavRoutes.DataBookList, "数据手册", R.drawable.ic_data_book),
-            NavItem(NavRoutes.Settings, "设置", R.drawable.ic_settings)
+            NavItem(NavRoutes.Profile, "我的", R.drawable.ic_user)
         )
 
         navItems.forEach { item ->

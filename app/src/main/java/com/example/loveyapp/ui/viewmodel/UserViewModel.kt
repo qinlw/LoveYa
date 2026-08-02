@@ -112,6 +112,15 @@ class UserViewModel @Inject constructor(
                 return@launch
             }
 
+            // 先占用用户名到 usersID.json（防同名，全局唯一），再本地建库
+            // 这样网络异常或用户名已被占用时，本地不会建库，避免脏数据
+            val reserved = remoteUserSyncService.checkAndReserveUserId(username)
+            if (!reserved) {
+                error = "该用户名已被占用或网络异常，请更换用户名或检查网络"
+                isLoading = false
+                return@launch
+            }
+
             val success = userRepository.register(username, password)
             if (success) {
                 // 同步到开发者中心 users.json，便于多设备异地账号找回

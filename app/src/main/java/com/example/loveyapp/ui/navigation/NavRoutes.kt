@@ -19,6 +19,9 @@ sealed class NavRoutes(val route: String) {
     object DataBookEdit : NavRoutes("dataBookEdit/{dataBookId}") {
         fun createRoute(dataBookId: Long?) = "dataBookEdit/${dataBookId ?: "new"}"
     }
+    object Profile : NavRoutes("profile")
     object Settings : NavRoutes("settings")
     object CloudBackup : NavRoutes("cloud_backup")
+    object EditAccount : NavRoutes("editAccount")
+    object Developer : NavRoutes("developer")
 }

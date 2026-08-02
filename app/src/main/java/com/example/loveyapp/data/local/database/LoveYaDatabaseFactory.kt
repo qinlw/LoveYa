@@ -41,7 +41,7 @@ class LoveYaDatabaseFactory @Inject constructor(@ApplicationContext private val 
                 LoveYaDatabase::class.java,
                 defaultDbFile.absolutePath
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 
             val db = builder.build()
 
@@ -111,6 +111,37 @@ class LoveYaDatabaseFactory @Inject constructor(@ApplicationContext private val 
             val dbFile = context.getDatabasePath("loveya_${username}.db")
             copyToCustomStorage("loveya_${username}.db", dbFile)
             it.close()
+        }
+    }
+
+    /** 判断指定用户名的数据库文件是否已存在（用于改用户名时查重）。 */
+    fun userExists(username: String): Boolean {
+        return context.getDatabasePath("loveya_${username}.db").exists()
+    }
+
+    /**
+     * 重命名用户数据库文件（改用户名时调用）。
+     * 先关闭旧连接并同步到外部存储，再把 db/db-shm/db-wal 三个文件重命名，
+     * 最后把新库同步到外部存储。返回是否重命名成功。
+     */
+    fun renameUser(oldUsername: String, newUsername: String): Boolean {
+        return try {
+            closeDatabase(oldUsername)
+            val oldDb = context.getDatabasePath("loveya_${oldUsername}.db")
+            val newDb = context.getDatabasePath("loveya_${newUsername}.db")
+            if (!oldDb.exists()) return false
+            val oldShm = context.getDatabasePath("loveya_${oldUsername}.db-shm")
+            val newShm = context.getDatabasePath("loveya_${newUsername}.db-shm")
+            val oldWal = context.getDatabasePath("loveya_${oldUsername}.db-wal")
+            val newWal = context.getDatabasePath("loveya_${newUsername}.db-wal")
+            oldDb.renameTo(newDb)
+            if (oldShm.exists()) oldShm.renameTo(newShm)
+            if (oldWal.exists()) oldWal.renameTo(newWal)
+            copyToCustomStorage("loveya_${newUsername}.db", newDb)
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 

@@ -20,6 +20,7 @@ object DeveloperConfig {
     private const val OWNER_PART = "qq2162036628"
     private const val REPO_PART = "love-ya-data"
     private const val USER_DATA_FILE = "users.json"
+    private const val USER_ID_FILE = "usersID.json"
     private const val DEFAULT_BRANCH = "master"
 
     /** 仓库所有者（Gitee 用户名） */
@@ -33,6 +34,9 @@ object DeveloperConfig {
 
     /** users.json 在仓库中的相对路径 */
     val userDataFilePath: String get() = USER_DATA_FILE
+
+    /** usersID.json 在仓库中的相对路径（记录所有已占用的备份ID，防重复） */
+    val userIdFilePath: String get() = USER_ID_FILE
 
     /** 完整仓库 HTTPS 地址（仅用于显示） */
     val repoUrl: String

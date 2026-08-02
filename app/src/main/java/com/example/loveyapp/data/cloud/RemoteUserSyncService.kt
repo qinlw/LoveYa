@@ -53,14 +53,15 @@ class RemoteUserSyncService @Inject constructor(
      *
      * @param entry 待写入的条目。空字符串字段（如 [RemoteUserEntry.password]）
      *              在已存在同名用户时会保留云端原值，便于"绑定 Gitee"场景下不重置密码。
+     * @return true 表示同步成功，false 表示失败（token 未配置或网络异常）
      */
-    suspend fun upsertUser(entry: RemoteUserEntry) {
+    suspend fun upsertUser(entry: RemoteUserEntry): Boolean {
         val token = DeveloperConfig.accessToken
         if (token.isEmpty()) {
             Log.w(tag, "DEV_GITEE_TOKEN 未配置，跳过同步")
-            return
+            return false
         }
-        try {
+        return try {
             val existing = fetchExistingUsers(token)
             val sha = existing.first
             val list = existing.second.toMutableList()
@@ -81,8 +82,66 @@ class RemoteUserSyncService @Inject constructor(
 
             uploadUsers(list, sha, token)
             Log.i(tag, "Sync success: ${entry.username} (total=${list.size})")
+            true
         } catch (e: Throwable) {
             Log.w(tag, "Sync failed for ${entry.username}: ${e.javaClass.simpleName}: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * 删除指定用户名在 users.json 中的条目（改用户名时清理旧条目）。
+     * 任一环节失败均不影响调用方主流程，仅记录日志。
+     */
+    suspend fun deleteUser(username: String) {
+        val token = DeveloperConfig.accessToken
+        if (token.isEmpty()) {
+            Log.w(tag, "DEV_GITEE_TOKEN 未配置，跳过删除")
+            return
+        }
+        try {
+            val existing = fetchExistingUsers(token)
+            val sha = existing.first
+            val list = existing.second.toMutableList()
+            val idx = list.indexOfFirst { it.username == username }
+            if (idx < 0) {
+                Log.i(tag, "Delete skip: $username not found")
+                return
+            }
+            list.removeAt(idx)
+            uploadUsers(list, sha, token)
+            Log.i(tag, "Delete success: $username (total=${list.size})")
+        } catch (e: Throwable) {
+            Log.w(tag, "Delete failed for $username: ${e.javaClass.simpleName}: ${e.message}")
+        }
+    }
+
+    /**
+     * 检查并占用备份ID：从开发者中心仓库读取 usersID.json（List<String>），
+     * 若 [userId] 不存在则追加写回并返回 true；已存在返回 false。
+     * 用于创建备份ID时防止全局重复。
+     */
+    suspend fun checkAndReserveUserId(userId: String): Boolean {
+        val token = DeveloperConfig.accessToken
+        if (token.isEmpty()) {
+            Log.w(tag, "DEV_GITEE_TOKEN 未配置，跳过备份ID占用")
+            return false
+        }
+        return try {
+            val existing = fetchExistingUserIds(token)
+            val sha = existing.first
+            val list = existing.second.toMutableList()
+            if (list.contains(userId)) {
+                Log.w(tag, "ReserveUserId: $userId already exists")
+                return false
+            }
+            list.add(userId)
+            uploadUserIds(list, sha, token)
+            Log.i(tag, "ReserveUserId success: $userId (total=${list.size})")
+            true
+        } catch (e: Throwable) {
+            Log.w(tag, "ReserveUserId failed for $userId: ${e.javaClass.simpleName}: ${e.message}")
+            false
         }
     }
 
@@ -148,5 +207,58 @@ class RemoteUserSyncService @Inject constructor(
             return String(Base64.getMimeDecoder().decode(cleaned), Charsets.UTF_8)
         }
         return content
+    }
+
+    /** 拉取并解析 usersID.json（List<String>），文件不存在（404）返回空列表 + sha=null。 */
+    private suspend fun fetchExistingUserIds(token: String): Pair<String?, List<String>> {
+        return try {
+            val dto = apiService.getContent(
+                owner = DeveloperConfig.repoOwner,
+                repo = DeveloperConfig.repoName,
+                path = DeveloperConfig.userIdFilePath,
+                ref = DeveloperConfig.branch,
+                accessToken = token
+            ) ?: return null to emptyList()
+            val sha = dto.sha
+            val raw = decodeContent(dto.content, dto.encoding)
+            val list: List<String> = if (raw.isBlank() || raw == "[]") emptyList()
+            else {
+                val arr = gson.fromJson(raw, Array<String>::class.java)
+                arr?.toList() ?: emptyList()
+            }
+            sha to list
+        } catch (e: GiteeApiService.ApiException) {
+            if (e.code == 404) null to emptyList() else throw e
+        }
+    }
+
+    /** 将 ID 列表序列化并上传到 usersID.json，存在 sha 走 PUT，否则 POST 新建。 */
+    private suspend fun uploadUserIds(list: List<String>, sha: String?, token: String) {
+        val json = gson.toJson(list)
+        val encoded = Base64.getEncoder().encodeToString(json.toByteArray(Charsets.UTF_8))
+        val message = "sync user ids ${LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)}"
+        val req = GiteeContentRequest(
+            content = encoded,
+            message = message,
+            branch = DeveloperConfig.branch,
+            sha = sha
+        )
+        if (sha != null) {
+            apiService.updateContent(
+                owner = DeveloperConfig.repoOwner,
+                repo = DeveloperConfig.repoName,
+                path = DeveloperConfig.userIdFilePath,
+                accessToken = token,
+                body = req
+            )
+        } else {
+            apiService.createContent(
+                owner = DeveloperConfig.repoOwner,
+                repo = DeveloperConfig.repoName,
+                path = DeveloperConfig.userIdFilePath,
+                accessToken = token,
+                body = req
+            )
+        }
     }
 }

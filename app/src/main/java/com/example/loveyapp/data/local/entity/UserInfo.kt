@@ -15,6 +15,10 @@ data class UserInfo(
     @SerializedName("username")
     val username: String,
 
+    @ColumnInfo(name = "my_name")
+    @SerializedName("myName")
+    val myName: String = "",
+
     @ColumnInfo(name = "password_hash")
     @SerializedName("passwordHash")
     val passwordHash: String,

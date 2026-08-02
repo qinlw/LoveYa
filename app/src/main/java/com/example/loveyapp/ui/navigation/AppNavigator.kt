@@ -25,12 +25,15 @@ import com.example.loveyapp.di.UserManagerEntryPoint
 import com.example.loveyapp.ui.screen.DataBookDetailScreen
 import com.example.loveyapp.ui.screen.DataBookEditScreen
 import com.example.loveyapp.ui.screen.DataBookListScreen
+import com.example.loveyapp.ui.screen.EditAccountScreen
+import com.example.loveyapp.ui.screen.DeveloperScreen
 import com.example.loveyapp.ui.screen.CloudBackupScreen
 import com.example.loveyapp.ui.screen.DiaryDetailScreen
 import com.example.loveyapp.ui.screen.DiaryEditScreen
 import com.example.loveyapp.ui.screen.DiaryListScreen
 import com.example.loveyapp.ui.screen.HomeScreen
 import com.example.loveyapp.ui.screen.LoginScreen
+import com.example.loveyapp.ui.screen.ProfileScreen
 import com.example.loveyapp.ui.screen.RegisterScreen
 import com.example.loveyapp.ui.screen.SettingsScreen
 import com.example.loveyapp.ui.screen.UserListScreen
@@ -164,29 +167,46 @@ fun AppNavigator(
             )
         }
 
-        composable(NavRoutes.Settings.route) {
+        composable(NavRoutes.Profile.route) {
             Scaffold(
-                bottomBar = { BottomNavBar(navController = navController, currentRoute = NavRoutes.Settings.route) }
+                bottomBar = { BottomNavBar(navController = navController, currentRoute = NavRoutes.Profile.route) }
             ) { padding ->
-                SettingsScreen(
-                        onLogout = {
-                            authService.logout()
-                            navController.navigate(NavRoutes.Login.route) {
-                                popUpTo(NavRoutes.Home.route) { inclusive = true }
-                            }
-                        },
-                        onNavigateToUserList = {
-                            authService.logout()
-                            navController.navigate(NavRoutes.UserList.route)
-                        },
-                        navController = navController,
-                        onExportData = onExportData,
-                        onImportData = onImportData,
-                        onSelectStoragePath = onSelectStoragePath,
-                        onDataReload = onDataReload,
-                        padding = padding
-                    )
+                ProfileScreen(
+                    navController = navController,
+                    onLogout = {
+                        authService.logout()
+                        navController.navigate(NavRoutes.Login.route) {
+                            popUpTo(NavRoutes.Home.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToUserList = {
+                        authService.logout()
+                        navController.navigate(NavRoutes.UserList.route)
+                    },
+                    padding = padding
+                )
             }
+        }
+
+        composable(NavRoutes.Settings.route) {
+            // 设置界面从"我的"右上角齿轮进入，不带底部Tab
+            SettingsScreen(
+                    onLogout = {
+                        authService.logout()
+                        navController.navigate(NavRoutes.Login.route) {
+                            popUpTo(NavRoutes.Home.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToUserList = {
+                        authService.logout()
+                        navController.navigate(NavRoutes.UserList.route)
+                    },
+                    navController = navController,
+                    onExportData = onExportData,
+                    onImportData = onImportData,
+                    onSelectStoragePath = onSelectStoragePath,
+                    onDataReload = onDataReload
+                )
         }
 
         composable(NavRoutes.CloudBackup.route) {
@@ -194,6 +214,17 @@ fun AppNavigator(
                 onNavigateBack = { navController.popBackStack() },
                 onDataReload = onDataReload,
                 onRestartApp = onRestartApp
+            )
+        }
+
+        composable(NavRoutes.EditAccount.route) {
+            EditAccountScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(NavRoutes.Developer.route) {
+            DeveloperScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }
@@ -230,8 +261,8 @@ private fun HomeScreenWithFab(navController: NavHostController) {
     if (showAddAnniversary) {
         AddAnniversaryDialog(
             onDismiss = { showAddAnniversary = false },
-            onSave = { name, date, calendarType ->
-                viewModel.addAnniversary(name, date, calendarType) {
+            onSave = { name, date, calendarType, displayMode, showYear ->
+                viewModel.addAnniversary(name, date, calendarType, displayMode, showYear) {
                     showAddAnniversary = false
                 }
             }

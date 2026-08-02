@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.loveyapp.data.local.entity.AnniversaryConfig
 import com.example.loveyapp.data.repository.AnniversaryRepository
-import com.example.loveyapp.util.CalendarType
+import com.example.loveyapp.util.DisplayCalendarMode
 import com.example.loveyapp.util.LunarCalendarUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -40,7 +40,7 @@ class AnniversaryViewModel @Inject constructor(
             error = null
             val configs = anniversaryRepository.getEnabledAnniversaries()
             anniversaries = configs.map { config ->
-                val daysRemaining = calculateDaysRemaining(config.targetDate, config.calendarType)
+                val daysRemaining = calculateDaysRemaining(config.targetDate, config.calendarType, config.displayMode)
                 AnniversaryWithDays(
                     config = config,
                     daysRemaining = daysRemaining,
@@ -51,49 +51,63 @@ class AnniversaryViewModel @Inject constructor(
         }
     }
 
-    fun calculateDaysRemaining(targetDate: String, calendarTypeStr: String): Int {
+    /**
+     * 计算距离下次纪念日的天数。
+     * - LUNAR_ONLY：按农历月日计算下次发生日期（把纪念日和今天都转成农历月日比较）
+     * - SOLAR_ONLY / BOTH：按公历日期计算
+     *
+     * 注意：数据库 targetDate 始终存储公历 yyyy-MM-dd。
+     */
+    fun calculateDaysRemaining(targetDate: String, calendarTypeStr: String, displayModeStr: String): Int {
         return try {
-            val calendarType = CalendarType.valueOf(calendarTypeStr)
             val today = LocalDate.now()
-            var target: LocalDate
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            val targetSolar = LocalDate.parse(targetDate, formatter)
+            val displayMode = DisplayCalendarMode.fromValue(displayModeStr)
 
-            if (calendarType == CalendarType.LUNAR) {
-                val parsed = LunarCalendarUtil.parseLunarDate(targetDate)
-                if (parsed != null) {
-                    val (year, month, day) = parsed
-                    target = LunarCalendarUtil.lunarToSolar(today.year, month, day)
-                } else {
-                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                    target = LocalDate.parse(targetDate, formatter)
-                }
+            if (displayMode == DisplayCalendarMode.LUNAR_ONLY) {
+                // LUNAR_ONLY 模式：按农历日期计算下次发生
+                // 把纪念日 targetDate（公历）转成农历月日
+                val targetLunar = LunarCalendarUtil.solarToLunar(
+                    targetSolar.year, targetSolar.monthValue, targetSolar.dayOfMonth
+                )
+                val targetLunarMonth = targetLunar[1]
+                val targetLunarDay = targetLunar[2]
+
+                // 把今天转成农历月日
+                val todayLunar = LunarCalendarUtil.solarToLunar(
+                    today.year, today.monthValue, today.dayOfMonth
+                )
+                val todayLunarYear = todayLunar[0]
+                val todayLunarMonth = todayLunar[1]
+                val todayLunarDay = todayLunar[2]
+
+                // 比较今天的农历月日和纪念日的农历月日
+                val todayLunarMD = todayLunarMonth * 100 + todayLunarDay
+                val targetLunarMD = targetLunarMonth * 100 + targetLunarDay
+
+                // 若今天的农历月日 >= 纪念日农历月日，下次发生是明年，否则是今年
+                val nextLunarYear = if (todayLunarMD >= targetLunarMD) todayLunarYear + 1 else todayLunarYear
+
+                // 把下次发生的农历日期转回公历，算天数差
+                val nextSolar = LunarCalendarUtil.lunarToSolar(nextLunarYear, targetLunarMonth, targetLunarDay)
+                ChronoUnit.DAYS.between(today, nextSolar).toInt()
             } else {
-                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                target = LocalDate.parse(targetDate, formatter)
-            }
-
-            var remaining = ChronoUnit.DAYS.between(today, target).toInt()
-
-            if (remaining < 0) {
-                if (calendarType == CalendarType.LUNAR) {
-                    val parsed = LunarCalendarUtil.parseLunarDate(targetDate)
-                    if (parsed != null) {
-                        val (_, month, day) = parsed
-                        target = LunarCalendarUtil.lunarToSolar(today.year + 1, month, day)
-                    } else {
-                        target = target.plusYears(1)
-                    }
-                } else {
+                // SOLAR_ONLY 或 BOTH：用公历算
+                var target = targetSolar
+                var remaining = ChronoUnit.DAYS.between(today, target).toInt()
+                if (remaining < 0) {
                     target = target.plusYears(1)
+                    remaining = ChronoUnit.DAYS.between(today, target).toInt()
                 }
-                remaining = ChronoUnit.DAYS.between(today, target).toInt()
+                remaining
             }
-            remaining
         } catch (e: Exception) {
             0
         }
     }
 
-    fun addAnniversary(name: String, targetDate: String, calendarType: String, onSuccess: () -> Unit) {
+    fun addAnniversary(name: String, targetDate: String, calendarType: String, displayMode: String, showYear: Boolean, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             error = null
@@ -102,8 +116,10 @@ class AnniversaryViewModel @Inject constructor(
                     name = name,
                     targetDate = targetDate,
                     calendarType = calendarType,
+                    displayMode = displayMode,
                     displayOrder = anniversaries.size,
-                    enabled = true
+                    enabled = true,
+                    showYear = showYear
                 )
             ) != null
             if (success) {
@@ -116,7 +132,7 @@ class AnniversaryViewModel @Inject constructor(
         }
     }
 
-    fun updateAnniversary(id: Long, name: String, targetDate: String, calendarType: String, onSuccess: () -> Unit) {
+    fun updateAnniversary(id: Long, name: String, targetDate: String, calendarType: String, displayMode: String, showYear: Boolean, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             error = null
@@ -126,6 +142,8 @@ class AnniversaryViewModel @Inject constructor(
                     name = name,
                     targetDate = targetDate,
                     calendarType = calendarType,
+                    displayMode = displayMode,
+                    showYear = showYear,
                     updatedAt = System.currentTimeMillis()
                 )
                 val success = anniversaryRepository.updateAnniversary(updated)

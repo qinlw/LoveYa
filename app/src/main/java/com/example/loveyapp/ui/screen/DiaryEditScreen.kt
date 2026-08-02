@@ -52,6 +52,8 @@ fun DiaryEditScreen(
         notebookName = "我的日记${today}"
     }
 
+    var saveMessage by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
             text = if (diaryId != null) "编辑日记" else "新建日记",
@@ -104,9 +106,15 @@ fun DiaryEditScreen(
             Button(
                 onClick = {
                     if (diaryId != null) {
-                        viewModel.updateDiary(diaryId, notebookName, content, tags, onSaveSuccess)
+                        viewModel.updateDiary(diaryId, notebookName, content, tags) {
+                            saveMessage = "保存成功"
+                            onSaveSuccess()
+                        }
                     } else {
-                        viewModel.addDiary(notebookName, content, tags, onSaveSuccess)
+                        viewModel.addDiary(notebookName, content, tags) {
+                            saveMessage = "保存成功"
+                            onSaveSuccess()
+                        }
                     }
                 },
                 modifier = Modifier
@@ -127,4 +135,11 @@ fun DiaryEditScreen(
             }
         }
     }
+
+    // 屏幕正中悬浮提示
+    com.example.loveyapp.ui.component.ToastPopup(
+        message = saveMessage,
+        isSuccess = true,
+        onDismiss = { saveMessage = null }
+    )
 }
