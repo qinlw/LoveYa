@@ -19,6 +19,7 @@ import javax.inject.Inject
 data class AnniversaryWithDays(
     val config: AnniversaryConfig,
     val daysRemaining: Int,
+    val daysPassed: Int,
     val isExpired: Boolean
 )
 
@@ -41,13 +42,34 @@ class AnniversaryViewModel @Inject constructor(
             val configs = anniversaryRepository.getEnabledAnniversaries()
             anniversaries = configs.map { config ->
                 val daysRemaining = calculateDaysRemaining(config.targetDate, config.calendarType, config.displayMode)
+                val daysPassed = calculateDaysPassed(config.targetDate)
                 AnniversaryWithDays(
                     config = config,
                     daysRemaining = daysRemaining,
+                    daysPassed = daysPassed,
                     isExpired = daysRemaining < 0
                 )
-            }.sortedBy { if (it.isExpired) Int.MAX_VALUE else it.daysRemaining }
+            }.sortedWith(
+                // 置顶项始终在最前，其余按剩余天数排序（已过期排最后）
+                compareByDescending<AnniversaryWithDays> { it.config.isPinned }
+                    .thenBy { if (it.isExpired) Int.MAX_VALUE else it.daysRemaining }
+            )
             isLoading = false
+        }
+    }
+
+    /**
+     * 计算从纪念日起始日到今天已经过去的天数。
+     * 直接按公历日期计算，始终返回非负值。
+     */
+    fun calculateDaysPassed(targetDate: String): Int {
+        return try {
+            val today = LocalDate.now()
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            val target = LocalDate.parse(targetDate, formatter)
+            ChronoUnit.DAYS.between(target, today).toInt().coerceAtLeast(0)
+        } catch (e: Exception) {
+            0
         }
     }
 
@@ -172,6 +194,14 @@ class AnniversaryViewModel @Inject constructor(
                 error = "删除失败"
             }
             isLoading = false
+        }
+    }
+
+    /** 切换置顶状态 */
+    fun togglePin(id: Long, pinned: Boolean) {
+        viewModelScope.launch {
+            anniversaryRepository.setPinned(id, pinned)
+            loadAnniversaries()
         }
     }
 }

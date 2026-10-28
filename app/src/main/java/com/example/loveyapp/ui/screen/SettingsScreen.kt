@@ -45,15 +45,12 @@ fun SettingsScreen(
     val scrollState = rememberScrollState()
 
     var userBirthday by remember { mutableStateOf("") }
-    var userBirthdayCalendarType by remember { mutableStateOf("SOLAR") }
     var myName by remember { mutableStateOf("") }
     var userGender by remember { mutableStateOf("保密") }
     var loverName by remember { mutableStateOf("") }
     var loverBirthday by remember { mutableStateOf("") }
-    var loverBirthdayCalendarType by remember { mutableStateOf("SOLAR") }
     var loverGender by remember { mutableStateOf("保密") }
     var anniversaryDate by remember { mutableStateOf("") }
-    var anniversaryCalendarType by remember { mutableStateOf("SOLAR") }
     var message by remember { mutableStateOf<String?>(null) }
 
 
@@ -99,10 +96,15 @@ fun SettingsScreen(
                 com.example.loveyapp.ui.component.DatePicker(
                     label = "生日",
                     selectedDate = userBirthday,
-                    calendarType = userBirthdayCalendarType,
-                    onDateSelected = { date, type ->
+                    calendarType = viewModel.myBirthdayCalendarType.name,
+                    onDateSelected = { date, _ ->
                         userBirthday = date
-                        userBirthdayCalendarType = type
+                    },
+                    onCalendarTypeChanged = { type ->
+                        viewModel.updateMyBirthdayCalendarType(
+                            if (type == "LUNAR") com.example.loveyapp.util.CalendarType.LUNAR
+                            else com.example.loveyapp.util.CalendarType.SOLAR
+                        )
                     }
                 )
 
@@ -152,10 +154,15 @@ fun SettingsScreen(
                 com.example.loveyapp.ui.component.DatePicker(
                     label = "爱人生日",
                     selectedDate = loverBirthday,
-                    calendarType = loverBirthdayCalendarType,
-                    onDateSelected = { date, type ->
+                    calendarType = viewModel.loverBirthdayCalendarType.name,
+                    onDateSelected = { date, _ ->
                         loverBirthday = date
-                        loverBirthdayCalendarType = type
+                    },
+                    onCalendarTypeChanged = { type ->
+                        viewModel.updateLoverBirthdayCalendarType(
+                            if (type == "LUNAR") com.example.loveyapp.util.CalendarType.LUNAR
+                            else com.example.loveyapp.util.CalendarType.SOLAR
+                        )
                     }
                 )
 
@@ -187,10 +194,15 @@ fun SettingsScreen(
                 com.example.loveyapp.ui.component.DatePicker(
                     label = "开始日期",
                     selectedDate = anniversaryDate,
-                    calendarType = anniversaryCalendarType,
-                    onDateSelected = { date, type ->
+                    calendarType = viewModel.anniversaryCalendarType.name,
+                    onDateSelected = { date, _ ->
                         anniversaryDate = date
-                        anniversaryCalendarType = type
+                    },
+                    onCalendarTypeChanged = { type ->
+                        viewModel.updateAnniversaryCalendarType(
+                            if (type == "LUNAR") com.example.loveyapp.util.CalendarType.LUNAR
+                            else com.example.loveyapp.util.CalendarType.SOLAR
+                        )
                     }
                 )
             }

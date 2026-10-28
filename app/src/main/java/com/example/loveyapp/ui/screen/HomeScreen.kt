@@ -1,6 +1,8 @@
 package com.example.loveyapp.ui.screen
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +28,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.loveyapp.ui.component.AddAnniversaryDialog
 import com.example.loveyapp.ui.component.AnniversaryCard
+import com.example.loveyapp.ui.component.SwipeRevealItem
 import com.example.loveyapp.ui.viewmodel.AnniversaryViewModel
 import com.example.loveyapp.ui.viewmodel.SettingsViewModel
 import com.example.loveyapp.util.DisplayCalendarMode
@@ -54,6 +57,9 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         settingsViewModel.loadUserInfo()
         anniversaryViewModel.loadAnniversaries()
+        // 每次进入首页时从持久化存储重新加载日历设置，
+        // 避免在其他页面（如设置页）修改后返回时仍显示旧值
+        settingsViewModel.reloadCalendarSettings()
     }
 
     LaunchedEffect(settingsViewModel.userInfo) {
@@ -82,19 +88,38 @@ fun HomeScreen(
             val mode = settingsViewModel.displayCalendarMode
             val solarToday = today.format(dateFormatter)
             val lunarToday = try { LunarCalendarUtil.solarToLunar(today) } catch (_: Exception) { "" }
-            val todayText = when (mode) {
-                DisplayCalendarMode.SOLAR_ONLY -> solarToday
-                DisplayCalendarMode.LUNAR_ONLY -> "农历 $lunarToday"
-                DisplayCalendarMode.BOTH -> buildString {
-                    append(solarToday)
-                    if (lunarToday.isNotBlank()) append("  农历 $lunarToday")
+            when (mode) {
+                DisplayCalendarMode.SOLAR_ONLY -> {
+                    Text(
+                        text = solarToday,
+                        fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+                DisplayCalendarMode.LUNAR_ONLY -> {
+                    Text(
+                        text = "农历 $lunarToday",
+                        fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+                DisplayCalendarMode.BOTH -> {
+                    // 公历与农历换行显示，避免过长时 UI 挤压变形
+                    Text(
+                        text = solarToday,
+                        fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    if (lunarToday.isNotBlank()) {
+                        Text(
+                            text = "农历 $lunarToday",
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
                 }
             }
-            Text(
-                text = todayText,
-                fontSize = 20.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
             Text(
                 text = today.format(dayOfWeekFormatter),
                 fontSize = 16.sp,
@@ -135,12 +160,16 @@ fun HomeScreen(
                 title = "我的生日",
                 birthday = userBirthday,
                 today = today,
+                calendarType = settingsViewModel.myBirthdayCalendarType,
+                onToggle = { settingsViewModel.toggleMyBirthdayCalendarType() },
                 modifier = Modifier.weight(1f)
             )
             BirthdayCountdownCard(
                 title = "爱人生日",
                 birthday = loverBirthday,
                 today = today,
+                calendarType = settingsViewModel.loverBirthdayCalendarType,
+                onToggle = { settingsViewModel.toggleLoverBirthdayCalendarType() },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -168,19 +197,26 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 itemsIndexed(anniversaryViewModel.anniversaries) { index, item ->
-                    AnniversaryCard(
-                        item = item,
-                        index = index,
-                        // 优先使用纪念日自己的 displayMode，不再使用全局 settingsViewModel.displayCalendarMode
-                        displayCalendarMode = DisplayCalendarMode.fromValue(item.config.displayMode),
-                        onEdit = {
-                            editingAnniversary = item
-                            showEditDialog = true
-                        },
-                        onDelete = {
-                            anniversaryViewModel.deleteAnniversary(item.config.id) {}
+                    SwipeRevealItem(
+                        actionText = if (item.config.isPinned) "取消置顶" else "置顶",
+                        onAction = {
+                            anniversaryViewModel.togglePin(item.config.id, !item.config.isPinned)
                         }
-                    )
+                    ) {
+                        AnniversaryCard(
+                            item = item,
+                            index = index,
+                            // 优先使用纪念日自己的 displayMode，不再使用全局 settingsViewModel.displayCalendarMode
+                            displayCalendarMode = DisplayCalendarMode.fromValue(item.config.displayMode),
+                            onEdit = {
+                                editingAnniversary = item
+                                showEditDialog = true
+                            },
+                            onDelete = {
+                                anniversaryViewModel.deleteAnniversary(item.config.id) {}
+                            }
+                        )
+                    }
                 }
 
                 if (anniversaryViewModel.anniversaries.isEmpty()) {
@@ -244,16 +280,22 @@ fun HomeScreen(
 /**
  * 生日倒计时卡片。
  *
- * 算法：把生日的月日和今年的月日比较；如果今年的生日已过则用明年算。
- * 只比较月日，不比较年。
+ * 点击标题可切换该生日的倒计时计算方式（公历 ↔ 农历）。
+ * 公历模式：按公历月日计算下次生日
+ * 农历模式：按农历月日计算下次生日（先转农历月日比较，再转回公历算天数）
  *
- * @param birthday 生日字符串，格式 yyyy-MM-dd；为空时显示“未设置”
+ * @param title 标题，如"我的生日"、"爱人生日"
+ * @param birthday 生日字符串，格式 yyyy-MM-dd；为空时显示"未设置"
+ * @param calendarType 当前使用的日历类型（公历/农历）
+ * @param onToggle 点击标题时触发，用于切换日历类型
  */
 @Composable
 private fun BirthdayCountdownCard(
     title: String,
     birthday: String,
     today: LocalDate,
+    calendarType: com.example.loveyapp.util.CalendarType,
+    onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val countdownText = if (birthday.isBlank()) {
@@ -262,23 +304,57 @@ private fun BirthdayCountdownCard(
         try {
             val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
             val bd = LocalDate.parse(birthday, formatter)
-            // 今年的生日（用今年的年份 + 生日的月日），只比较月日
-            val thisYearBirthday = LocalDate.of(today.year, bd.monthValue, bd.dayOfMonth)
-            val days = ChronoUnit.DAYS.between(today, thisYearBirthday).toInt()
+
+            val days = if (calendarType == com.example.loveyapp.util.CalendarType.SOLAR) {
+                // 公历模式：用公历月日计算
+                val thisYearBirthday = LocalDate.of(today.year, bd.monthValue, bd.dayOfMonth)
+                val diff = ChronoUnit.DAYS.between(today, thisYearBirthday).toInt()
+                if (diff >= 0) diff else {
+                    val nextBirthday = thisYearBirthday.plusYears(1)
+                    ChronoUnit.DAYS.between(today, nextBirthday).toInt()
+                }
+            } else {
+                // 农历模式：按农历月日计算
+                // 把生日（公历）转成农历月日
+                val bdLunar = com.example.loveyapp.util.LunarCalendarUtil.solarToLunar(
+                    bd.year, bd.monthValue, bd.dayOfMonth
+                )
+                val bdLunarMonth = bdLunar[1]
+                val bdLunarDay = bdLunar[2]
+
+                // 把今天转成农历月日
+                val todayLunar = com.example.loveyapp.util.LunarCalendarUtil.solarToLunar(
+                    today.year, today.monthValue, today.dayOfMonth
+                )
+                val todayLunarYear = todayLunar[0]
+                val todayLunarMonth = todayLunar[1]
+                val todayLunarDay = todayLunar[2]
+
+                // 比较农历月日
+                val todayMD = todayLunarMonth * 100 + todayLunarDay
+                val bdMD = bdLunarMonth * 100 + bdLunarDay
+
+                // 确定下次农历生日的年份
+                val nextLunarYear = if (todayMD >= bdMD) todayLunarYear + 1 else todayLunarYear
+
+                // 转回公历算天数差
+                val nextSolar = com.example.loveyapp.util.LunarCalendarUtil.lunarToSolar(
+                    nextLunarYear, bdLunarMonth, bdLunarDay
+                )
+                ChronoUnit.DAYS.between(today, nextSolar).toInt()
+            }
+
             when {
                 days == 0 -> "就是今天"
                 days > 0 -> "还有${days}天"
-                else -> {
-                    // 今年生日已过，用明年算
-                    val nextBirthday = thisYearBirthday.plusYears(1)
-                    val nextDays = ChronoUnit.DAYS.between(today, nextBirthday).toInt()
-                    "还有${nextDays}天"
-                }
+                else -> "还有${-days}天"
             }
         } catch (_: Exception) {
             "未设置"
         }
     }
+
+    val typeLabel = if (calendarType == com.example.loveyapp.util.CalendarType.SOLAR) "公历" else "农历"
 
     Card(
         modifier = modifier
@@ -289,12 +365,33 @@ private fun BirthdayCountdownCard(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier
+                    .clickable(
+                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                        indication = androidx.compose.material.ripple.rememberRipple(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        ),
+                        onClick = onToggle
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                    Text(
+                        text = title,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = typeLabel,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
             Text(
                 text = countdownText,
                 fontSize = 18.sp,

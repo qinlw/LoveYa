@@ -19,7 +19,8 @@ fun DatePicker(
     label: String,
     selectedDate: String,
     calendarType: String,
-    onDateSelected: (String, String) -> Unit
+    onDateSelected: (String, String) -> Unit,
+    onCalendarTypeChanged: (String) -> Unit = {}
 ) {
     var showDatePicker by remember { mutableStateOf(false) }
     var currentCalendarType by remember { mutableStateOf(calendarType) }
@@ -27,6 +28,20 @@ fun DatePicker(
     var displayDateValue by remember { mutableStateOf("") }
     var alternateDateValue by remember { mutableStateOf("") }
     val datePickerState = rememberDatePickerState()
+
+    // 外部日历类型变化时（如从持久化存储恢复），同步到内部状态
+    LaunchedEffect(calendarType) {
+        if (currentCalendarType != calendarType) {
+            currentCalendarType = calendarType
+        }
+    }
+
+    // 外部日期变化时（如从持久化数据恢复），同步内部选中值
+    LaunchedEffect(selectedDate) {
+        if (selectedDateValue != selectedDate) {
+            selectedDateValue = selectedDate
+        }
+    }
 
     LaunchedEffect(selectedDate, currentCalendarType) {
         if (selectedDate.isNotBlank()) {
@@ -75,6 +90,8 @@ fun DatePicker(
                             }
                         }
                         currentCalendarType = type.name
+                        // 通知外部日历类型变化，以便外部持久化
+                        onCalendarTypeChanged(type.name)
                     },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(

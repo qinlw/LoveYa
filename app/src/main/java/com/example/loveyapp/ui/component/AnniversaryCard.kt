@@ -13,10 +13,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,8 +61,12 @@ fun AnniversaryCard(
     var showMenu by remember { mutableStateOf(false) }
 
     val backgroundColor by animateColorAsState(
-        targetValue = if (isPressed) MaterialTheme.colorScheme.surfaceVariant
-                      else MaterialTheme.colorScheme.surface,
+        targetValue = when {
+            isPressed -> MaterialTheme.colorScheme.surfaceVariant
+            // 置顶项使用浅蓝底色，便于一眼区分
+            item.config.isPinned -> MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+            else -> MaterialTheme.colorScheme.surface
+        },
         animationSpec = spring(stiffness = Spring.StiffnessMedium)
     )
 
@@ -132,11 +140,39 @@ fun AnniversaryCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = item.config.name,
-                fontSize = 20.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (item.config.isPinned) {
+                    Row(
+                        modifier = Modifier
+                            .padding(end = 6.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(6.dp)
+                            )
+                            .padding(horizontal = 5.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PushPin,
+                            contentDescription = "已置顶",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = "置顶",
+                            fontSize = 10.sp,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 2.dp)
+                        )
+                    }
+                }
+                Text(
+                    text = item.config.name,
+                    fontSize = 20.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
 
             // 长按触发的下拉菜单：编辑 / 删除
             DropdownMenu(
@@ -171,12 +207,22 @@ fun AnniversaryCard(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
 
-            Text(
-                text = if (item.isExpired) "已过${-item.daysRemaining}天" else "还有${item.daysRemaining}天",
-                fontSize = 18.sp,
-                color = daysColor,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-            )
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = "已经${item.daysPassed}天",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+                Text(
+                    text = if (item.isExpired) "已过${-item.daysRemaining}天" else "还有${item.daysRemaining}天",
+                    fontSize = 18.sp,
+                    color = daysColor,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
         }
     }
 }

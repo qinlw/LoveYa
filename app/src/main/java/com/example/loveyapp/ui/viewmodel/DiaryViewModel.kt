@@ -18,6 +18,11 @@ enum class SortOrder {
     DESC
 }
 
+enum class DiarySortType {
+    DEFAULT,
+    TIME
+}
+
 @HiltViewModel
 class DiaryViewModel @Inject constructor(
     private val diaryRepository: DiaryRepository
@@ -30,6 +35,7 @@ class DiaryViewModel @Inject constructor(
     private var _searchQuery by mutableStateOf("")
     private var _selectedTag by mutableStateOf<String?>(null)
     var sortOrder by mutableStateOf(SortOrder.DESC)
+    var sortType by mutableStateOf(DiarySortType.DEFAULT)
     val searchQuery get() = _searchQuery
     val selectedTag get() = _selectedTag
 
@@ -63,10 +69,23 @@ class DiaryViewModel @Inject constructor(
             result = result.filter { it.tags.contains(_selectedTag!!) }
         }
 
-        result = if (sortOrder == SortOrder.DESC) {
-            result.sortedByDescending { it.createdAt }
-        } else {
-            result.sortedBy { it.createdAt }
+        // 置顶项永远排在最前；默认排序按最后更新时间，时间排序按创建时间
+        val pinnedFirst = compareByDescending<Diary> { it.isPinned }
+        result = when (sortType) {
+            DiarySortType.DEFAULT -> {
+                if (sortOrder == SortOrder.DESC) {
+                    result.sortedWith(pinnedFirst.thenByDescending { it.updatedAt })
+                } else {
+                    result.sortedWith(pinnedFirst.thenBy { it.updatedAt })
+                }
+            }
+            DiarySortType.TIME -> {
+                if (sortOrder == SortOrder.DESC) {
+                    result.sortedWith(pinnedFirst.thenByDescending { it.createdAt })
+                } else {
+                    result.sortedWith(pinnedFirst.thenBy { it.createdAt })
+                }
+            }
         }
 
         filteredDiaries = result
@@ -131,20 +150,20 @@ class DiaryViewModel @Inject constructor(
     }
 
     /**
-     * 同时更新日记的标题和内容字段（详情页直接编辑后保存）。
-     * tags 保留原值，同时刷新 currentDiary。
+     * 同时更新日记的标题、内容、tags 字段（详情页直接编辑后保存）。
+     * 同时刷新 currentDiary。
      */
-    fun updateDiaryContentAndTitle(id: Long, notebookName: String, content: String, onSuccess: () -> Unit) {
+    fun updateDiaryContentAndTitle(id: Long, notebookName: String, content: String, tags: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             error = null
             val existingDiary = diaryRepository.getDiaryById(id)
             if (existingDiary != null) {
                 val success = diaryRepository.updateDiary(
-                    existingDiary.copy(notebookName = notebookName, content = content)
+                    existingDiary.copy(notebookName = notebookName, content = content, tags = tags)
                 )
                 if (success) {
-                    currentDiary = existingDiary.copy(notebookName = notebookName, content = content)
+                    currentDiary = existingDiary.copy(notebookName = notebookName, content = content, tags = tags)
                     loadDiaries()
                     onSuccess()
                 } else {
@@ -206,5 +225,18 @@ class DiaryViewModel @Inject constructor(
     fun toggleSortOrder() {
         sortOrder = if (sortOrder == SortOrder.ASC) SortOrder.DESC else SortOrder.ASC
         applyFilters()
+    }
+
+    fun updateSortType(type: DiarySortType) {
+        sortType = type
+        applyFilters()
+    }
+
+    fun togglePin(id: Long, isPinned: Boolean) {
+        viewModelScope.launch {
+            if (diaryRepository.setPinned(id, isPinned)) {
+                loadDiaries()
+            }
+        }
     }
 }

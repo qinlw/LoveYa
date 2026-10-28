@@ -1,8 +1,9 @@
-package com.example.loveyapp.data.service
+﻿package com.example.loveyapp.data.service
 
 import android.net.Uri
 import com.example.loveyapp.data.local.database.LoveYaDatabaseFactory
 import com.example.loveyapp.data.local.entity.AnniversaryConfig
+import com.example.loveyapp.data.local.entity.CalendarMark
 import com.example.loveyapp.data.local.entity.DataBook
 import com.example.loveyapp.data.local.entity.Diary
 import com.example.loveyapp.data.local.entity.UserInfo
@@ -27,7 +28,8 @@ class DataExportService @Inject constructor(
         @SerializedName("userInfo") val userInfo: UserInfo?,
         @SerializedName("diaries") val diaries: List<Diary>,
         @SerializedName("dataBooks") val dataBooks: List<DataBook>,
-        @SerializedName("anniversaries") val anniversaries: List<AnniversaryConfig>
+        @SerializedName("anniversaries") val anniversaries: List<AnniversaryConfig>,
+        @SerializedName("calendarMarks") val calendarMarks: List<CalendarMark> = emptyList()
     )
 
     suspend fun exportUserData(username: String): String {
@@ -37,13 +39,15 @@ class DataExportService @Inject constructor(
             val diaries = database.diaryDao().getAll()
             val dataBooks = database.dataBookDao().getAll()
             val anniversaries = database.anniversaryConfigDao().getAll()
+            val calendarMarks = database.calendarMarkDao().getAll()
 
             val exportData = ExportData(
                 exportDate = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
                 userInfo = userInfo,
                 diaries = diaries,
                 dataBooks = dataBooks,
-                anniversaries = anniversaries
+                anniversaries = anniversaries,
+                calendarMarks = calendarMarks
             )
 
             gson.toJson(exportData)

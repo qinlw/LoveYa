@@ -27,6 +27,10 @@ data class Diary(
     @SerializedName("tags")
     val tags: String,
 
+    @ColumnInfo(name = "is_pinned")
+    @SerializedName("isPinned")
+    val isPinned: Boolean = false,
+
     @ColumnInfo(name = "created_at")
     @SerializedName("createdAt")
     val createdAt: Long = System.currentTimeMillis(),

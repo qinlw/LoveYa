@@ -41,7 +41,7 @@ class LoveYaDatabaseFactory @Inject constructor(@ApplicationContext private val 
                 LoveYaDatabase::class.java,
                 defaultDbFile.absolutePath
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
 
             val db = builder.build()
 

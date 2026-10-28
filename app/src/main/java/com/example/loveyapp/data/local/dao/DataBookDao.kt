@@ -20,6 +20,9 @@ interface DataBookDao {
     @Update
     suspend fun update(dataBook: DataBook)
 
+    @Query("UPDATE data_book SET is_pinned = :isPinned WHERE id = :id")
+    suspend fun updatePinStatus(id: Long, isPinned: Boolean)
+
     @Query("DELETE FROM data_book WHERE id = :id")
     suspend fun deleteById(id: Long)
 

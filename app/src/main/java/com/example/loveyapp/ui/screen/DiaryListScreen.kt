@@ -13,12 +13,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +36,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.loveyapp.ui.component.DiaryCard
+import com.example.loveyapp.ui.component.SwipeRevealItem
+import com.example.loveyapp.ui.viewmodel.DiarySortType
 import com.example.loveyapp.ui.viewmodel.DiaryViewModel
 import com.example.loveyapp.ui.viewmodel.SortOrder
 
@@ -47,6 +53,7 @@ fun DiaryListScreen(
     val backStackEntry = navController.currentBackStackEntryAsState()
     val selectedIds = remember { mutableStateOf<Set<Long>>(emptySet()) }
     val searchInput = remember { mutableStateOf("") }
+    val showSortMenu = remember { mutableStateOf(false) }
 
     LaunchedEffect(backStackEntry.value) {
         viewModel.loadDiaries()
@@ -99,12 +106,43 @@ fun DiaryListScreen(
                     }
                 }
             } else {
-                IconButton(onClick = { viewModel.toggleSortOrder() }) {
-                    Icon(
-                        imageVector = if (viewModel.sortOrder == SortOrder.DESC) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
-                        contentDescription = if (viewModel.sortOrder == SortOrder.DESC) "降序" else "升序",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Button(onClick = { showSortMenu.value = true }) {
+                        Text(if (viewModel.sortType == DiarySortType.DEFAULT) "默认" else "时间")
+                        Icon(
+                            imageVector = Icons.Default.ExpandMore,
+                            contentDescription = "展开",
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showSortMenu.value,
+                        onDismissRequest = { showSortMenu.value = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("默认") },
+                            onClick = {
+                                viewModel.updateSortType(DiarySortType.DEFAULT)
+                                showSortMenu.value = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("时间") },
+                            onClick = {
+                                viewModel.updateSortType(DiarySortType.TIME)
+                                showSortMenu.value = false
+                            }
+                        )
+                    }
+
+                    IconButton(onClick = { viewModel.toggleSortOrder() }) {
+                        Icon(
+                            imageVector = if (viewModel.sortOrder == SortOrder.DESC) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                            contentDescription = if (viewModel.sortOrder == SortOrder.DESC) "降序" else "升序",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
         }
@@ -161,28 +199,33 @@ fun DiaryListScreen(
                     items = viewModel.filteredDiaries,
                     key = { _, diary -> diary.id }
                 ) { index, diary ->
-                    DiaryCard(
-                        diary = diary,
-                        index = index,
-                        isSelected = selectedIds.value.contains(diary.id),
-                        onClick = {
-                            if (selectedIds.value.isNotEmpty()) {
-                                val newSelection = if (selectedIds.value.contains(diary.id)) {
-                                    selectedIds.value.minus(diary.id)
+                    SwipeRevealItem(
+                        actionText = if (diary.isPinned) "取消置顶" else "置顶",
+                        onAction = { viewModel.togglePin(diary.id, !diary.isPinned) }
+                    ) {
+                        DiaryCard(
+                            diary = diary,
+                            index = index,
+                            isSelected = selectedIds.value.contains(diary.id),
+                            onClick = {
+                                if (selectedIds.value.isNotEmpty()) {
+                                    val newSelection = if (selectedIds.value.contains(diary.id)) {
+                                        selectedIds.value.minus(diary.id)
+                                    } else {
+                                        selectedIds.value.plus(diary.id)
+                                    }
+                                    selectedIds.value = newSelection
                                 } else {
-                                    selectedIds.value.plus(diary.id)
+                                    onNavigateToDetail(diary.id)
                                 }
-                                selectedIds.value = newSelection
-                            } else {
-                                onNavigateToDetail(diary.id)
+                            },
+                            onLongClick = {
+                                if (selectedIds.value.isEmpty()) {
+                                    selectedIds.value = setOf(diary.id)
+                                }
                             }
-                        },
-                        onLongClick = {
-                            if (selectedIds.value.isEmpty()) {
-                                selectedIds.value = setOf(diary.id)
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
 
                 if (viewModel.filteredDiaries.isEmpty()) {

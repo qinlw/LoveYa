@@ -1,8 +1,9 @@
-package com.example.loveyapp.data.service
+﻿package com.example.loveyapp.data.service
 
 import android.net.Uri
 import com.example.loveyapp.data.local.database.LoveYaDatabaseFactory
 import com.example.loveyapp.data.local.entity.AnniversaryConfig
+import com.example.loveyapp.data.local.entity.CalendarMark
 import com.example.loveyapp.data.local.entity.DataBook
 import com.example.loveyapp.data.local.entity.Diary
 import com.example.loveyapp.data.local.entity.UserInfo
@@ -25,7 +26,8 @@ class DataImportService @Inject constructor(
         @SerializedName("userInfo") val userInfo: UserInfo?,
         @SerializedName("diaries") val diaries: List<Diary>,
         @SerializedName("dataBooks") val dataBooks: List<DataBook>,
-        @SerializedName("anniversaries") val anniversaries: List<AnniversaryConfig>
+        @SerializedName("anniversaries") val anniversaries: List<AnniversaryConfig>,
+        @SerializedName("calendarMarks") val calendarMarks: List<CalendarMark>? = null
     )
 
     fun importFromFile(fileUri: Uri): ImportResult {
@@ -93,6 +95,14 @@ class DataImportService @Inject constructor(
             if (importData.anniversaries.isNotEmpty()) {
                 database.anniversaryConfigDao().deleteAll()
                 database.anniversaryConfigDao().insertAll(importData.anniversaries)
+            }
+
+            // 旧版本备份没有该字段，仅当存在时覆盖（Gson Unsafe 会绕过默认值，故可空判断）
+            importData.calendarMarks?.let { marks ->
+                if (marks.isNotEmpty()) {
+                    database.calendarMarkDao().deleteAll()
+                    database.calendarMarkDao().insertAll(marks)
+                }
             }
 
             true

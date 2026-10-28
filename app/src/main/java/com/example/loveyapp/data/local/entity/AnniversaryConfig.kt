@@ -35,6 +35,10 @@ data class AnniversaryConfig(
     @SerializedName("enabled")
     val enabled: Boolean = true,
 
+    @ColumnInfo(name = "is_pinned")
+    @SerializedName("isPinned")
+    val isPinned: Boolean = false,
+
     @ColumnInfo(name = "show_year")
     @SerializedName("showYear")
     val showYear: Boolean = true,

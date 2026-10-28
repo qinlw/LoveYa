@@ -40,3 +40,28 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
         database.execSQL("ALTER TABLE anniversary_config ADD COLUMN show_year INTEGER NOT NULL DEFAULT 1")
     }
 }
+
+// diary/data_book 新增 is_pinned 置顶字段；新增 calendar_mark 表（日历页大姨妈/纪念日标记）
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE diary ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0")
+        database.execSQL("ALTER TABLE data_book ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0")
+        database.execSQL("""
+            CREATE TABLE IF NOT EXISTS calendar_mark (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                date TEXT NOT NULL,
+                type TEXT NOT NULL,
+                name TEXT NOT NULL DEFAULT '',
+                created_at INTEGER NOT NULL DEFAULT 0,
+                updated_at INTEGER NOT NULL DEFAULT 0
+            )
+        """.trimIndent())
+    }
+}
+
+// anniversary_config 新增 is_pinned 置顶字段
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(database: SupportSQLiteDatabase) {
+        database.execSQL("ALTER TABLE anniversary_config ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0")
+    }
+}

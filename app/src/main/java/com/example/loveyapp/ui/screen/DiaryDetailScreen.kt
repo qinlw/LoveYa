@@ -46,6 +46,8 @@ fun DiaryDetailScreen(
     var editableTitle by remember { mutableStateOf("") }
     // 可编辑的内容文本
     var editableContent by remember { mutableStateOf("") }
+    // 可编辑的标签
+    var editableTags by remember { mutableStateOf("") }
     // 保存反馈提示
     var saveMessage by remember { mutableStateOf<String?>(null) }
 
@@ -57,11 +59,14 @@ fun DiaryDetailScreen(
     }
 
     val diary = viewModel.currentDiary
-    // 日记加载后初始化可编辑字段
+    // 日记加载后初始化可编辑字段（仅在尚未初始化时填充，避免覆盖用户输入）
+    var fieldsInitialized by remember { mutableStateOf(false) }
     LaunchedEffect(diary?.id) {
-        if (diary != null) {
-            if (editableTitle.isEmpty()) editableTitle = diary.notebookName
-            if (editableContent.isEmpty()) editableContent = diary.content
+        if (diary != null && !fieldsInitialized) {
+            editableTitle = diary.notebookName
+            editableContent = diary.content
+            editableTags = diary.tags
+            fieldsInitialized = true
         }
     }
 
@@ -83,7 +88,7 @@ fun DiaryDetailScreen(
                     }
                 },
                 actions = {
-                    // 右上角"保存"按钮：同时保存日记标题和内容
+                    // 右上角"保存"按钮：同时保存日记标题、内容和标签
                     TextButton(
                         onClick = {
                             diary?.let { d ->
@@ -91,7 +96,8 @@ fun DiaryDetailScreen(
                                 viewModel.updateDiaryContentAndTitle(
                                     d.id,
                                     titleToSave,
-                                    editableContent
+                                    editableContent,
+                                    editableTags
                                 ) {
                                     saveMessage = "保存成功"
                                 }
@@ -243,27 +249,24 @@ fun DiaryDetailScreen(
                                         ),
                                         minLines = 3
                                     )
-                                }
 
-                                if (diary.tags.isNotBlank()) {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Row(
+                                    Spacer(modifier = Modifier.height(20.dp))
+
+                                    // 标签可编辑
+                                    Text(
+                                        text = "标签",
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    OutlinedTextField(
+                                        value = editableTags,
+                                        onValueChange = { editableTags = it },
+                                        label = { Text("多个标签用逗号分隔") },
                                         modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "标签：",
-                                            fontSize = 14.sp,
-                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                        Text(
-                                            text = diary.tags,
-                                            fontSize = 14.sp,
-                                            color = MaterialTheme.colorScheme.primary,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
+                                        singleLine = true
+                                    )
                                 }
 
                                 Spacer(modifier = Modifier.height(32.dp))

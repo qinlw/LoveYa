@@ -27,6 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.loveyapp.ui.component.AttributeCard
+import com.example.loveyapp.ui.component.SwipeRevealItem
 import com.example.loveyapp.ui.viewmodel.DataBookSortType
 import com.example.loveyapp.ui.viewmodel.DataBookViewModel
 import com.example.loveyapp.ui.viewmodel.SortOrder
@@ -211,28 +212,33 @@ fun DataBookListScreen(
                     items = viewModel.filteredDataBooks,
                     key = { _, dataBook -> dataBook.id }
                 ) { index, dataBook ->
-                    AttributeCard(
-                        dataBook = dataBook,
-                        index = index,
-                        isSelected = selectedIds.value.contains(dataBook.id),
-                        onClick = {
-                            if (selectedIds.value.isNotEmpty()) {
-                                val newSelection = if (selectedIds.value.contains(dataBook.id)) {
-                                    selectedIds.value.minus(dataBook.id)
+                    SwipeRevealItem(
+                        actionText = if (dataBook.isPinned) "取消置顶" else "置顶",
+                        onAction = { viewModel.togglePin(dataBook.id, !dataBook.isPinned) }
+                    ) {
+                        AttributeCard(
+                            dataBook = dataBook,
+                            index = index,
+                            isSelected = selectedIds.value.contains(dataBook.id),
+                            onClick = {
+                                if (selectedIds.value.isNotEmpty()) {
+                                    val newSelection = if (selectedIds.value.contains(dataBook.id)) {
+                                        selectedIds.value.minus(dataBook.id)
+                                    } else {
+                                        selectedIds.value.plus(dataBook.id)
+                                    }
+                                    selectedIds.value = newSelection
                                 } else {
-                                    selectedIds.value.plus(dataBook.id)
+                                    onNavigateToDetail(dataBook.id)
                                 }
-                                selectedIds.value = newSelection
-                            } else {
-                                onNavigateToDetail(dataBook.id)
+                            },
+                            onLongClick = {
+                                if (selectedIds.value.isEmpty()) {
+                                    selectedIds.value = setOf(dataBook.id)
+                                }
                             }
-                        },
-                        onLongClick = {
-                            if (selectedIds.value.isEmpty()) {
-                                selectedIds.value = setOf(dataBook.id)
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
 
                 if (viewModel.filteredDataBooks.isEmpty()) {

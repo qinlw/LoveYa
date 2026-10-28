@@ -63,26 +63,28 @@ class DataBookViewModel @Inject constructor(
             result = result.filter { it.tags.contains(_selectedTag!!) }
         }
 
+        // 置顶项永远排在最前；默认排序按最后更新时间，时间排序按创建时间
+        val pinnedFirst = compareByDescending<DataBook> { it.isPinned }
         result = when (sortType) {
             DataBookSortType.DEFAULT -> {
                 if (sortOrder == SortOrder.DESC) {
-                    result.sortedByDescending { it.createdAt }
+                    result.sortedWith(pinnedFirst.thenByDescending { it.updatedAt })
                 } else {
-                    result.sortedBy { it.createdAt }
+                    result.sortedWith(pinnedFirst.thenBy { it.updatedAt })
                 }
             }
             DataBookSortType.TIME -> {
                 if (sortOrder == SortOrder.DESC) {
-                    result.sortedByDescending { it.createdAt }
+                    result.sortedWith(pinnedFirst.thenByDescending { it.createdAt })
                 } else {
-                    result.sortedBy { it.createdAt }
+                    result.sortedWith(pinnedFirst.thenBy { it.createdAt })
                 }
             }
             DataBookSortType.NAME -> {
                 if (sortOrder == SortOrder.DESC) {
-                    result.sortedByDescending { it.name }
+                    result.sortedWith(pinnedFirst.thenByDescending { it.name })
                 } else {
-                    result.sortedBy { it.name }
+                    result.sortedWith(pinnedFirst.thenBy { it.name })
                 }
             }
         }
@@ -98,6 +100,14 @@ class DataBookViewModel @Inject constructor(
     fun toggleSortOrder() {
         sortOrder = if (sortOrder == SortOrder.ASC) SortOrder.DESC else SortOrder.ASC
         applyFilters()
+    }
+
+    fun togglePin(id: Long, isPinned: Boolean) {
+        viewModelScope.launch {
+            if (dataBookRepository.setPinned(id, isPinned)) {
+                loadDataBooks()
+            }
+        }
     }
 
     fun getDataBookById(id: Long) {
@@ -184,20 +194,20 @@ class DataBookViewModel @Inject constructor(
     }
 
     /**
-     * 同时更新数据手册的 name 和 content 字段（详情页直接编辑名称和内容后保存）。
-     * tags 保留原值，同时刷新 currentDataBook。
+     * 同时更新数据手册的 name、content、tags 字段（详情页直接编辑后保存）。
+     * 同时刷新 currentDataBook。
      */
-    fun updateDataBookNameAndContent(id: Long, name: String, content: String, onSuccess: () -> Unit) {
+    fun updateDataBookNameAndContent(id: Long, name: String, content: String, tags: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             error = null
             val existingDataBook = dataBookRepository.getDataBookById(id)
             if (existingDataBook != null) {
                 val success = dataBookRepository.updateDataBook(
-                    existingDataBook.copy(name = name, content = content)
+                    existingDataBook.copy(name = name, content = content, tags = tags)
                 )
                 if (success) {
-                    currentDataBook = existingDataBook.copy(name = name, content = content)
+                    currentDataBook = existingDataBook.copy(name = name, content = content, tags = tags)
                     loadDataBooks()
                     onSuccess()
                 } else {

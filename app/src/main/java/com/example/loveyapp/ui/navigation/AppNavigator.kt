@@ -1,7 +1,12 @@
 package com.example.loveyapp.ui.navigation
 
 import android.content.Context
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -12,8 +17,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,6 +38,7 @@ import com.example.loveyapp.ui.screen.DataBookListScreen
 import com.example.loveyapp.ui.screen.EditAccountScreen
 import com.example.loveyapp.ui.screen.DeveloperScreen
 import com.example.loveyapp.ui.screen.CloudBackupScreen
+import com.example.loveyapp.ui.screen.CalendarScreen
 import com.example.loveyapp.ui.screen.DiaryDetailScreen
 import com.example.loveyapp.ui.screen.DiaryEditScreen
 import com.example.loveyapp.ui.screen.DiaryListScreen
@@ -43,6 +54,7 @@ import com.example.loveyapp.ui.viewmodel.AnniversaryViewModel
 import com.example.loveyapp.security.AuthService
 import dagger.hilt.android.EntryPointAccessors
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlin.math.roundToInt
 
 @Composable
 fun AppNavigator(
@@ -146,6 +158,14 @@ fun AppNavigator(
             }
         }
 
+        composable(NavRoutes.Calendar.route) {
+            Scaffold(
+                bottomBar = { BottomNavBar(navController = navController, currentRoute = NavRoutes.Calendar.route) }
+            ) { padding ->
+                CalendarScreen(padding = padding)
+            }
+        }
+
         composable(NavRoutes.DataBookDetail.route) { backStackEntry ->
             val dataBookId = backStackEntry.arguments?.getString("dataBookId")?.toLongOrNull()
             if (dataBookId != null) {
@@ -236,26 +256,45 @@ private fun HomeScreenWithFab(navController: NavHostController) {
     val viewModel: AnniversaryViewModel = hiltViewModel()
 
     Scaffold(
-        bottomBar = { BottomNavBar(navController = navController, currentRoute = NavRoutes.Home.route) },
-        floatingActionButton = {
+        bottomBar = { BottomNavBar(navController = navController, currentRoute = NavRoutes.Home.route) }
+    ) { padding ->
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
+            HomeScreen(
+                onNavigateToAddAnniversary = {},
+                navController = navController,
+                padding = androidx.compose.foundation.layout.PaddingValues()
+            )
+
+            val density = LocalDensity.current
+            val fabSize = 56.dp
+            val fabMargin = 16.dp
+            val maxXPx = with(density) { (maxWidth - fabSize - fabMargin).toPx() }.coerceAtLeast(0f)
+            val maxYPx = with(density) { (maxHeight - fabSize - fabMargin).toPx() }.coerceAtLeast(0f)
+
+            // 初始位置：右下角（与原 Scaffold FAB 位置一致）
+            var fabX by remember(maxXPx) { mutableStateOf(maxXPx) }
+            var fabY by remember(maxYPx) { mutableStateOf(maxYPx) }
+
             FloatingActionButton(
                 onClick = { showAddAnniversary = true },
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier
+                    .offset { IntOffset(fabX.roundToInt(), fabY.roundToInt()) }
+                    .pointerInput(maxXPx, maxYPx) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            fabX = (fabX + dragAmount.x).coerceIn(0f, maxXPx)
+                            fabY = (fabY + dragAmount.y).coerceIn(0f, maxYPx)
+                        }
+                    }
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_add),
                     contentDescription = "添加纪念日"
                 )
             }
-        },
-        floatingActionButtonPosition = FabPosition.End
-    ) { padding ->
-        HomeScreen(
-            onNavigateToAddAnniversary = {},
-            navController = navController,
-            padding = padding
-        )
+        }
     }
 
     if (showAddAnniversary) {

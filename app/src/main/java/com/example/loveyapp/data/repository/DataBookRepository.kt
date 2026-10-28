@@ -37,6 +37,16 @@ class DataBookRepository @Inject constructor(
         }
     }
 
+    /** 切换置顶状态。置顶不算内容更新，不修改 updated_at。 */
+    suspend fun setPinned(id: Long, isPinned: Boolean): Boolean {
+        return try {
+            database.dataBookDao().updatePinStatus(id, isPinned)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     suspend fun getAllDataBooks(): List<DataBook> {
         return try {
             database.dataBookDao().getAll()

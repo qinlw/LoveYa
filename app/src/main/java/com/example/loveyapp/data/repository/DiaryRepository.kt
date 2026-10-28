@@ -37,6 +37,16 @@ class DiaryRepository @Inject constructor(
         }
     }
 
+    /** 切换置顶状态。置顶不算内容更新，不修改 updated_at。 */
+    suspend fun setPinned(id: Long, isPinned: Boolean): Boolean {
+        return try {
+            database.diaryDao().updatePinStatus(id, isPinned)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     suspend fun getAllDiaries(): List<Diary> {
         return try {
             database.diaryDao().getAll()

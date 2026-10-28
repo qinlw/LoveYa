@@ -47,6 +47,8 @@ fun DataBookDetailScreen(
     var editableName by remember { mutableStateOf("") }
     // 可编辑的内容文本
     var editableContent by remember { mutableStateOf("") }
+    // 可编辑的标签
+    var editableTags by remember { mutableStateOf("") }
     // 保存反馈提示
     var saveMessage by remember { mutableStateOf<String?>(null) }
 
@@ -56,11 +58,14 @@ fun DataBookDetailScreen(
     }
 
     val dataBook = viewModel.currentDataBook
-    // 数据手册加载后初始化可编辑字段
+    // 数据手册加载后初始化可编辑字段（仅在尚未初始化时填充，避免覆盖用户输入）
+    var fieldsInitialized by remember { mutableStateOf(false) }
     LaunchedEffect(dataBook?.id) {
-        if (dataBook != null) {
-            if (editableName.isEmpty()) editableName = dataBook.name
-            if (editableContent.isEmpty()) editableContent = dataBook.content
+        if (dataBook != null && !fieldsInitialized) {
+            editableName = dataBook.name
+            editableContent = dataBook.content
+            editableTags = dataBook.tags
+            fieldsInitialized = true
         }
     }
 
@@ -82,7 +87,7 @@ fun DataBookDetailScreen(
                     }
                 },
                 actions = {
-                    // 右上角"保存"按钮：同时保存手册名称和内容
+                    // 右上角"保存"按钮：同时保存手册名称、内容和标签
                     TextButton(
                         onClick = {
                             dataBook?.let { book ->
@@ -90,7 +95,8 @@ fun DataBookDetailScreen(
                                 viewModel.updateDataBookNameAndContent(
                                     book.id,
                                     nameToSave,
-                                    editableContent
+                                    editableContent,
+                                    editableTags
                                 ) {
                                     saveMessage = "保存成功"
                                 }
@@ -222,6 +228,24 @@ fun DataBookDetailScreen(
                                         textIndent = TextIndent(firstLine = 24.sp)
                                     ),
                                     minLines = 3
+                                )
+
+                                Spacer(modifier = Modifier.height(20.dp))
+
+                                // 标签可编辑
+                                Text(
+                                    text = "标签",
+                                    fontSize = 16.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = editableTags,
+                                    onValueChange = { editableTags = it },
+                                    label = { Text("多个标签用逗号分隔") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
                                 )
                             }
 

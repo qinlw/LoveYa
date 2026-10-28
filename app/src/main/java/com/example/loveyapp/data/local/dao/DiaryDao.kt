@@ -29,6 +29,9 @@ interface DiaryDao {
     @Update
     suspend fun update(diary: Diary)
 
+    @Query("UPDATE diary SET is_pinned = :isPinned WHERE id = :id")
+    suspend fun updatePinStatus(id: Long, isPinned: Boolean)
+
     @Query("DELETE FROM diary WHERE id = :id")
     suspend fun deleteById(id: Long)
 

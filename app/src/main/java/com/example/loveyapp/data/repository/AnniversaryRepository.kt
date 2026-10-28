@@ -45,6 +45,15 @@ class AnniversaryRepository @Inject constructor(
         }
     }
 
+    suspend fun setPinned(id: Long, pinned: Boolean): Boolean {
+        return try {
+            database.anniversaryConfigDao().updatePinStatus(id, pinned)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     suspend fun getEnabledAnniversaries(): List<AnniversaryConfig> {
         return try {
             database.anniversaryConfigDao().getAllEnabled()

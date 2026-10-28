@@ -13,6 +13,7 @@ sealed class NavRoutes(val route: String) {
         fun createRoute(diaryId: Long?) = "diaryEdit/${diaryId ?: "new"}"
     }
     object DataBookList : NavRoutes("dataBookList")
+    object Calendar : NavRoutes("calendar")
     object DataBookDetail : NavRoutes("dataBookDetail/{dataBookId}") {
         fun createRoute(dataBookId: Long) = "dataBookDetail/$dataBookId"
     }

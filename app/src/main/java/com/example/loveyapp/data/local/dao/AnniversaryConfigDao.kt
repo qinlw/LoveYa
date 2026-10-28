@@ -11,10 +11,10 @@ interface AnniversaryConfigDao {
     @Insert
     suspend fun insert(anniversaryConfig: AnniversaryConfig): Long
 
-    @Query("SELECT * FROM anniversary_config WHERE enabled = 1 ORDER BY display_order")
+    @Query("SELECT * FROM anniversary_config WHERE enabled = 1 ORDER BY is_pinned DESC, display_order")
     suspend fun getAllEnabled(): List<AnniversaryConfig>
 
-    @Query("SELECT * FROM anniversary_config ORDER BY display_order")
+    @Query("SELECT * FROM anniversary_config ORDER BY is_pinned DESC, display_order")
     suspend fun getAll(): List<AnniversaryConfig>
 
     @Query("SELECT * FROM anniversary_config WHERE id = :id LIMIT 1")
@@ -22,6 +22,9 @@ interface AnniversaryConfigDao {
 
     @Query("SELECT * FROM anniversary_config WHERE name = :name LIMIT 1")
     suspend fun findByName(name: String): AnniversaryConfig?
+
+    @Query("UPDATE anniversary_config SET is_pinned = :pinned WHERE id = :id")
+    suspend fun updatePinStatus(id: Long, pinned: Boolean)
 
     @Update
     suspend fun update(anniversaryConfig: AnniversaryConfig)

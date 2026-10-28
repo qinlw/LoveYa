@@ -16,8 +16,8 @@ android {
         applicationId = "com.example.loveyapp"
         minSdk = 30
         targetSdk = 34
-        versionCode = 36
-        versionName = "2.1.0"
+        versionCode = 43
+        versionName = "3.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

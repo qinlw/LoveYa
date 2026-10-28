@@ -41,16 +41,17 @@ fun DiaryEditScreen(
     }
 
     val diary = viewModel.currentDiary
-    if (diary != null && notebookName.isEmpty()) {
+    var fieldsInitialized by remember { mutableStateOf(false) }
+    if (diary != null && !fieldsInitialized) {
         notebookName = diary.notebookName
         content = diary.content
         tags = diary.tags
+        fieldsInitialized = true
     }
 
-    if (diaryId == null && notebookName.isEmpty()) {
-        val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-        notebookName = "我的日记${today}"
-    }
+    // 新建日记时作为 placeholder 显示的默认标题，不占用真正的标题框
+    val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+    val defaultTitle = "我的日记${today}"
 
     var saveMessage by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
 
@@ -72,6 +73,13 @@ fun DiaryEditScreen(
                 value = notebookName,
                 onValueChange = { notebookName = it },
                 label = { Text("日记标题") },
+                placeholder = {
+                    // 用户未输入时灰色显示默认标题，输入后自动消失，标题为空时重新显示
+                    Text(
+                        defaultTitle,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                    )
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -105,13 +113,15 @@ fun DiaryEditScreen(
 
             Button(
                 onClick = {
+                    // 标题为空时使用默认标题
+                    val titleToSave = notebookName.ifBlank { defaultTitle }
                     if (diaryId != null) {
-                        viewModel.updateDiary(diaryId, notebookName, content, tags) {
+                        viewModel.updateDiary(diaryId, titleToSave, content, tags) {
                             saveMessage = "保存成功"
                             onSaveSuccess()
                         }
                     } else {
-                        viewModel.addDiary(notebookName, content, tags) {
+                        viewModel.addDiary(titleToSave, content, tags) {
                             saveMessage = "保存成功"
                             onSaveSuccess()
                         }
@@ -120,7 +130,8 @@ fun DiaryEditScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 24.dp),
-                enabled = !viewModel.isLoading && notebookName.isNotBlank() && content.isNotBlank()
+                // 标题允许为空（用默认标题），仅内容必填
+                enabled = !viewModel.isLoading && content.isNotBlank()
             ) {
                 Text(if (diaryId != null) "保存修改" else "保存")
             }
