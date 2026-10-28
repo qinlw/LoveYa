@@ -2,6 +2,26 @@
 
 记录恋爱时光，守护美好回忆
 
+## ⬇️ 下载
+
+### 最新版本
+
+| 版本 | 发布日期 | 大小 | 下载 |
+| :--- | :--- | :--- | :--- |
+| **LoveYa 3.0.0（最新）** | 2026-10-28 | 25.3 MB | **[点击下载](https://github.com/qinlw/LoveYa/raw/main/apk/LoveYa_3.0.0.apk)** |
+
+### 全部版本
+
+| 版本 | 类型 | 发布日期 | 大小 | 下载 |
+| :--- | :--- | :--- | :--- | :--- |
+| 3.0.0 | 正式版（最新） | 2026-10-28 | 25.3 MB | [下载](https://github.com/qinlw/LoveYa/raw/main/apk/LoveYa_3.0.0.apk) |
+| 2.1.0 | 正式版 | 2026-08-02 | 25.1 MB | [下载](https://github.com/qinlw/LoveYa/raw/main/apk/LoveYa_2.1.0.apk) |
+| 2.0.0 | 正式版 | 2026-08-02 | 25.0 MB | [下载](https://github.com/qinlw/LoveYa/raw/main/apk/LoveYa_2.0.0.apk) |
+| 1.1.0 | 测试版 | 2026-07-26 | 24.1 MB | [下载](https://github.com/qinlw/LoveYa/raw/main/apk/LoveYa_Test_1.1.0.apk) |
+| 1.0.0 | 测试版 | 2026-07-26 | 24.0 MB | [下载](https://github.com/qinlw/LoveYa/raw/main/apk/LoveYa_Test_1.0.0.apk) |
+
+> 提示：正式版自 2.0.0 起发布，1.x 为测试阶段版本。各版本详细更新内容见 [apk/LoveYaVersion.md](apk/LoveYaVersion.md)。
+
 ## 功能特点
 
 - 💕 纪念日管理：记录重要日子，设置提醒
