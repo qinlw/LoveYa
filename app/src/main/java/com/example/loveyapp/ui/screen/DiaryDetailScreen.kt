@@ -3,6 +3,7 @@ package com.example.loveyapp.ui.screen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -29,7 +30,11 @@ import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.loveyapp.ui.component.DiaryTimeInput
 import com.example.loveyapp.ui.component.ToastPopup
+import com.example.loveyapp.ui.component.UnsavedChangesDialog
+import com.example.loveyapp.ui.component.normalizeDiaryDateTime
+import com.example.loveyapp.ui.component.splitDiaryDateTime
 import com.example.loveyapp.ui.viewmodel.DiaryViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,8 +53,15 @@ fun DiaryDetailScreen(
     var editableContent by remember { mutableStateOf("") }
     // 可编辑的标签
     var editableTags by remember { mutableStateOf("") }
+    // 可编辑的日记时间（日期 + 时刻）
+    var editableDate by remember { mutableStateOf("") }
+    var editableTime by remember { mutableStateOf("00:00") }
+    // 加载时的原始日记时间，用于判断是否有修改
+    var originalDateTime by remember { mutableStateOf("") }
     // 保存反馈提示
     var saveMessage by remember { mutableStateOf<String?>(null) }
+    // 未保存退出确认
+    var showExitDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(diaryId) {
         if (diaryId != null && viewModel.currentDiary == null) {
@@ -66,7 +78,49 @@ fun DiaryDetailScreen(
             editableTitle = diary.notebookName
             editableContent = diary.content
             editableTags = diary.tags
+            val (loadedDate, loadedTime) = splitDiaryDateTime(diary.date)
+            editableDate = loadedDate
+            editableTime = loadedTime
+            originalDateTime = normalizeDiaryDateTime(diary.date)
             fieldsInitialized = true
+        }
+    }
+
+    // 有未保存的修改时，系统返回键先弹确认框，避免直接丢失编辑
+    val hasUnsavedChanges = diary != null && (
+        editableTitle != diary.notebookName ||
+            editableContent != diary.content ||
+            editableTags != diary.tags ||
+            "$editableDate $editableTime" != originalDateTime
+        )
+    val canSave = diary != null && !viewModel.isLoading
+
+    val saveDiary: (() -> Unit) -> Unit = { onDone ->
+        diary?.let { d ->
+            val titleToSave = editableTitle.trim().ifEmpty { d.notebookName }
+            viewModel.updateDiaryContentAndTitle(
+                d.id,
+                titleToSave,
+                editableContent,
+                editableTags,
+                "$editableDate $editableTime"
+            ) {
+                saveMessage = "保存成功"
+                // 保存成功后同步基准值，避免刚保存完仍被判定为未保存
+                editableTitle = titleToSave
+                originalDateTime = "$editableDate $editableTime"
+                onDone()
+            }
+        }
+    }
+
+    BackHandler(enabled = hasUnsavedChanges) { showExitDialog = true }
+
+    val handleBack: () -> Unit = {
+        if (hasUnsavedChanges) {
+            showExitDialog = true
+        } else {
+            onNavigateBack()
         }
     }
 
@@ -79,7 +133,7 @@ fun DiaryDetailScreen(
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = handleBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "返回",
@@ -88,22 +142,10 @@ fun DiaryDetailScreen(
                     }
                 },
                 actions = {
-                    // 右上角"保存"按钮：同时保存日记标题、内容和标签
+                    // 右上角"保存"按钮：同时保存日记标题、内容、标签和日记时间
                     TextButton(
-                        onClick = {
-                            diary?.let { d ->
-                                val titleToSave = editableTitle.trim().ifEmpty { d.notebookName }
-                                viewModel.updateDiaryContentAndTitle(
-                                    d.id,
-                                    titleToSave,
-                                    editableContent,
-                                    editableTags
-                                ) {
-                                    saveMessage = "保存成功"
-                                }
-                            }
-                        },
-                        enabled = diary != null && !viewModel.isLoading
+                        onClick = { saveDiary {} },
+                        enabled = canSave
                     ) {
                         Text("保存", color = MaterialTheme.colorScheme.onSurface)
                     }
@@ -201,12 +243,13 @@ fun DiaryDetailScreen(
 
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                // 日记日期居中展示
-                                Text(
-                                    text = diary.date,
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                    fontWeight = FontWeight.Medium
+                                // 日记时间（必填）：保存后仍可修改
+                                DiaryTimeInput(
+                                    date = editableDate,
+                                    time = editableTime,
+                                    onDateSelected = { editableDate = it },
+                                    onTimeSelected = { editableTime = it },
+                                    modifier = Modifier.padding(top = 8.dp)
                                 )
 
                                 Spacer(modifier = Modifier.height(24.dp))
@@ -300,5 +343,20 @@ fun DiaryDetailScreen(
                 onDismiss = { saveMessage = null }
             )
         }
+    }
+
+    if (showExitDialog) {
+        UnsavedChangesDialog(
+            canSave = canSave,
+            onSaveAndExit = {
+                showExitDialog = false
+                saveDiary { onNavigateBack() }
+            },
+            onDiscardAndExit = {
+                showExitDialog = false
+                onNavigateBack()
+            },
+            onContinueEditing = { showExitDialog = false }
+        )
     }
 }

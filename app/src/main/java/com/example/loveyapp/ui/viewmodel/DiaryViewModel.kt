@@ -9,8 +9,6 @@ import com.example.loveyapp.data.local.entity.Diary
 import com.example.loveyapp.data.repository.DiaryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 enum class SortOrder {
@@ -100,16 +98,15 @@ class DiaryViewModel @Inject constructor(
         }
     }
 
-    fun addDiary(notebookName: String, content: String, tags: String, onSuccess: () -> Unit) {
+    fun addDiary(notebookName: String, content: String, tags: String, date: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             error = null
-            val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             val success = diaryRepository.addDiary(
                 Diary(
                     notebookName = notebookName,
                     content = content,
-                    date = today,
+                    date = date,
                     tags = tags
                 )
             ) != null
@@ -123,7 +120,7 @@ class DiaryViewModel @Inject constructor(
         }
     }
 
-    fun updateDiary(id: Long, notebookName: String, content: String, tags: String, onSuccess: () -> Unit) {
+    fun updateDiary(id: Long, notebookName: String, content: String, tags: String, date: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             error = null
@@ -133,7 +130,8 @@ class DiaryViewModel @Inject constructor(
                     existingDiary.copy(
                         notebookName = notebookName,
                         content = content,
-                        tags = tags
+                        tags = tags,
+                        date = date
                     )
                 )
                 if (success) {
@@ -153,17 +151,17 @@ class DiaryViewModel @Inject constructor(
      * 同时更新日记的标题、内容、tags 字段（详情页直接编辑后保存）。
      * 同时刷新 currentDiary。
      */
-    fun updateDiaryContentAndTitle(id: Long, notebookName: String, content: String, tags: String, onSuccess: () -> Unit) {
+    fun updateDiaryContentAndTitle(id: Long, notebookName: String, content: String, tags: String, date: String, onSuccess: () -> Unit) {
         viewModelScope.launch {
             isLoading = true
             error = null
             val existingDiary = diaryRepository.getDiaryById(id)
             if (existingDiary != null) {
                 val success = diaryRepository.updateDiary(
-                    existingDiary.copy(notebookName = notebookName, content = content, tags = tags)
+                    existingDiary.copy(notebookName = notebookName, content = content, tags = tags, date = date)
                 )
                 if (success) {
-                    currentDiary = existingDiary.copy(notebookName = notebookName, content = content, tags = tags)
+                    currentDiary = existingDiary.copy(notebookName = notebookName, content = content, tags = tags, date = date)
                     loadDiaries()
                     onSuccess()
                 } else {

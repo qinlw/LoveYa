@@ -8,17 +8,17 @@
 
 | 版本 | 发布日期 | 大小 | 下载 |
 | :--- | :--- | :--- | :--- |
-| **LoveYa 3.0.0（最新）** | 2026-10-28 | 25.3 MB | **[点击下载](https://github.com/qinlw/LoveYa/raw/main/apk/LoveYa_3.0.0.apk)** |
+| **LoveYa 3.0.0（最新）** | 2026-10-28 | 25.3 MB | **[点击下载](https://gitee.com/qq2162036628/love-ya/raw/main/apk/LoveYa_3.0.0.apk)** |
 
 ### 全部版本
 
 | 版本 | 类型 | 发布日期 | 大小 | 下载 |
 | :--- | :--- | :--- | :--- | :--- |
-| 3.0.0 | 正式版（最新） | 2026-10-28 | 25.3 MB | [下载](https://github.com/qinlw/LoveYa/raw/main/apk/LoveYa_3.0.0.apk) |
-| 2.1.0 | 正式版 | 2026-08-02 | 25.1 MB | [下载](https://github.com/qinlw/LoveYa/raw/main/apk/LoveYa_2.1.0.apk) |
-| 2.0.0 | 正式版 | 2026-08-02 | 25.0 MB | [下载](https://github.com/qinlw/LoveYa/raw/main/apk/LoveYa_2.0.0.apk) |
-| 1.1.0 | 测试版 | 2026-07-26 | 24.1 MB | [下载](https://github.com/qinlw/LoveYa/raw/main/apk/LoveYa_Test_1.1.0.apk) |
-| 1.0.0 | 测试版 | 2026-07-26 | 24.0 MB | [下载](https://github.com/qinlw/LoveYa/raw/main/apk/LoveYa_Test_1.0.0.apk) |
+| 3.0.0 | 正式版（最新） | 2026-10-28 | 25.3 MB | [下载](https://gitee.com/qq2162036628/love-ya/raw/main/apk/LoveYa_3.0.0.apk) |
+| 2.1.0 | 正式版 | 2026-08-02 | 25.1 MB | [下载](https://gitee.com/qq2162036628/love-ya/raw/main/apk/LoveYa_2.1.0.apk) |
+| 2.0.0 | 正式版 | 2026-08-02 | 25.0 MB | [下载](https://gitee.com/qq2162036628/love-ya/raw/main/apk/LoveYa_2.0.0.apk) |
+| 1.1.0 | 测试版 | 2026-07-26 | 24.1 MB | [下载](https://gitee.com/qq2162036628/love-ya/raw/main/apk/LoveYa_Test_1.1.0.apk) |
+| 1.0.0 | 测试版 | 2026-07-26 | 24.0 MB | [下载](https://gitee.com/qq2162036628/love-ya/raw/main/apk/LoveYa_Test_1.0.0.apk) |
 
 > 提示：正式版自 2.0.0 起发布，1.x 为测试阶段版本。各版本详细更新内容见 [apk/LoveYaVersion.md](apk/LoveYaVersion.md)。
 

@@ -1,14 +1,18 @@
 package com.example.loveyapp.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,14 +42,47 @@ fun DataBookEditScreen(
         }
     }
 
+    // 加载完成后的原始内容，用于判断是否有未保存的修改
+    var originalName by remember { mutableStateOf("") }
+    var originalContent by remember { mutableStateOf("") }
+    var originalTags by remember { mutableStateOf("") }
+
     val dataBook = viewModel.currentDataBook
-    if (dataBook != null && name.isEmpty()) {
+    var fieldsInitialized by remember { mutableStateOf(false) }
+    if (dataBook != null && !fieldsInitialized) {
         name = dataBook.name
         content = dataBook.content
         tags = dataBook.tags
+        originalName = dataBook.name
+        originalContent = dataBook.content
+        originalTags = dataBook.tags
+        fieldsInitialized = true
     }
 
     var saveMessage by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+
+    val hasUnsavedChanges = name != originalName ||
+        content != originalContent ||
+        tags != originalTags
+    val canSave = name.isNotBlank() && content.isNotBlank() && !viewModel.isLoading
+    var showExitDialog by remember { mutableStateOf(false) }
+
+    val saveDataBook: () -> Unit = {
+        if (dataBookId != null) {
+            viewModel.updateDataBook(dataBookId, name, content, tags) {
+                saveMessage = "保存成功"
+                onSaveSuccess()
+            }
+        } else {
+            viewModel.addDataBook(name, content, tags) {
+                saveMessage = "保存成功"
+                onSaveSuccess()
+            }
+        }
+    }
+
+    // 拦截系统返回：有未保存内容时先询问，避免直接退出丢失编辑
+    BackHandler(enabled = hasUnsavedChanges) { showExitDialog = true }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
@@ -97,29 +134,23 @@ fun DataBookEditScreen(
             }
 
             Button(
-                onClick = {
-                    if (dataBookId != null) {
-                        viewModel.updateDataBook(dataBookId, name, content, tags) {
-                            saveMessage = "保存成功"
-                            onSaveSuccess()
-                        }
-                    } else {
-                        viewModel.addDataBook(name, content, tags) {
-                            saveMessage = "保存成功"
-                            onSaveSuccess()
-                        }
-                    }
-                },
+                onClick = saveDataBook,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 24.dp),
-                enabled = !viewModel.isLoading && name.isNotBlank() && content.isNotBlank()
+                enabled = canSave
             ) {
                 Text(if (dataBookId != null) "保存修改" else "保存")
             }
 
             Button(
-                onClick = onNavigateBack,
+                onClick = {
+                    if (hasUnsavedChanges) {
+                        showExitDialog = true
+                    } else {
+                        onNavigateBack()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp)
@@ -127,6 +158,40 @@ fun DataBookEditScreen(
                 Text("取消")
             }
         }
+    }
+
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text("尚未保存") },
+            text = { Text("当前编辑的内容还没有保存，是否保存后退出？") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExitDialog = false
+                        saveDataBook()
+                    },
+                    enabled = canSave
+                ) {
+                    Text("保存")
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            showExitDialog = false
+                            onNavigateBack()
+                        }
+                    ) {
+                        Text("不保存")
+                    }
+                    TextButton(onClick = { showExitDialog = false }) {
+                        Text("继续编辑")
+                    }
+                }
+            }
+        )
     }
 
     // 屏幕正中悬浮提示

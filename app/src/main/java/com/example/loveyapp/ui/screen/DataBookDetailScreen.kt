@@ -3,6 +3,7 @@ package com.example.loveyapp.ui.screen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.loveyapp.ui.component.ToastPopup
+import com.example.loveyapp.ui.component.UnsavedChangesDialog
 import com.example.loveyapp.ui.viewmodel.DataBookViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,6 +53,8 @@ fun DataBookDetailScreen(
     var editableTags by remember { mutableStateOf("") }
     // 保存反馈提示
     var saveMessage by remember { mutableStateOf<String?>(null) }
+    // 未保存退出确认
+    var showExitDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(dataBookId) {
         viewModel.getDataBookById(dataBookId)
@@ -69,6 +73,41 @@ fun DataBookDetailScreen(
         }
     }
 
+    // 有未保存的修改时，系统返回键先弹确认框，避免直接丢失编辑
+    val hasUnsavedChanges = dataBook != null && (
+        editableName != dataBook.name ||
+            editableContent != dataBook.content ||
+            editableTags != dataBook.tags
+        )
+    val canSave = dataBook != null && !viewModel.isLoading
+
+    val saveDataBook: (() -> Unit) -> Unit = { onDone ->
+        dataBook?.let { book ->
+            val nameToSave = editableName.trim().ifEmpty { book.name }
+            viewModel.updateDataBookNameAndContent(
+                book.id,
+                nameToSave,
+                editableContent,
+                editableTags
+            ) {
+                saveMessage = "保存成功"
+                // 保存成功后同步基准值，避免刚保存完仍被判定为未保存
+                editableName = nameToSave
+                onDone()
+            }
+        }
+    }
+
+    BackHandler(enabled = hasUnsavedChanges) { showExitDialog = true }
+
+    val handleBack: () -> Unit = {
+        if (hasUnsavedChanges) {
+            showExitDialog = true
+        } else {
+            onNavigateBack()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -78,7 +117,7 @@ fun DataBookDetailScreen(
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = handleBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "返回",
@@ -89,20 +128,8 @@ fun DataBookDetailScreen(
                 actions = {
                     // 右上角"保存"按钮：同时保存手册名称、内容和标签
                     TextButton(
-                        onClick = {
-                            dataBook?.let { book ->
-                                val nameToSave = editableName.trim().ifEmpty { book.name }
-                                viewModel.updateDataBookNameAndContent(
-                                    book.id,
-                                    nameToSave,
-                                    editableContent,
-                                    editableTags
-                                ) {
-                                    saveMessage = "保存成功"
-                                }
-                            }
-                        },
-                        enabled = dataBook != null && !viewModel.isLoading
+                        onClick = { saveDataBook {} },
+                        enabled = canSave
                     ) {
                         Text("保存", color = MaterialTheme.colorScheme.onSurface)
                     }
@@ -281,5 +308,20 @@ fun DataBookDetailScreen(
                 onDismiss = { saveMessage = null }
             )
         }
+    }
+
+    if (showExitDialog) {
+        UnsavedChangesDialog(
+            canSave = canSave,
+            onSaveAndExit = {
+                showExitDialog = false
+                saveDataBook { onNavigateBack() }
+            },
+            onDiscardAndExit = {
+                showExitDialog = false
+                onNavigateBack()
+            },
+            onContinueEditing = { showExitDialog = false }
+        )
     }
 }
