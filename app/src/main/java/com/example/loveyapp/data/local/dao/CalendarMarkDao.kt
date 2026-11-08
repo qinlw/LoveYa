@@ -16,6 +16,9 @@ interface CalendarMarkDao {
     @Query("DELETE FROM calendar_mark WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("UPDATE calendar_mark SET note = :note, updated_at = :updatedAt WHERE id = :id")
+    suspend fun updateNote(id: Long, note: String?, updatedAt: Long)
+
     @Insert
     suspend fun insertAll(marks: List<CalendarMark>)
 

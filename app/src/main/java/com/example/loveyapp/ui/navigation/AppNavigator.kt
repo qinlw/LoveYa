@@ -39,6 +39,7 @@ import com.example.loveyapp.ui.screen.EditAccountScreen
 import com.example.loveyapp.ui.screen.DeveloperScreen
 import com.example.loveyapp.ui.screen.CloudBackupScreen
 import com.example.loveyapp.ui.screen.CalendarScreen
+import com.example.loveyapp.ui.screen.MoodScreen
 import com.example.loveyapp.ui.screen.DiaryDetailScreen
 import com.example.loveyapp.ui.screen.DiaryEditScreen
 import com.example.loveyapp.ui.screen.DiaryListScreen
@@ -123,10 +124,12 @@ fun AppNavigator(
 
         composable(NavRoutes.DiaryEdit.route) { backStackEntry ->
             val diaryId = backStackEntry.arguments?.getString("diaryId")?.takeIf { it != "new" }?.toLongOrNull()
+            val initialDate = backStackEntry.arguments?.getString("date")
             DiaryEditScreen(
                 diaryId = diaryId,
                 onSaveSuccess = { navController.popBackStack() },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                initialDate = initialDate
             )
         }
 
@@ -162,8 +165,23 @@ fun AppNavigator(
             Scaffold(
                 bottomBar = { BottomNavBar(navController = navController, currentRoute = NavRoutes.Calendar.route) }
             ) { padding ->
-                CalendarScreen(padding = padding)
+                CalendarScreen(
+                    padding = padding,
+                    onOpenDiary = { diaryId ->
+                        navController.navigate(NavRoutes.DiaryDetail.createRoute(diaryId))
+                    },
+                    onWriteDiary = { date ->
+                        navController.navigate(NavRoutes.DiaryEdit.createRoute(null, date.toString()))
+                    },
+                    onOpenMoods = {
+                        navController.navigate(NavRoutes.Moods.route)
+                    }
+                )
             }
+        }
+
+        composable(NavRoutes.Moods.route) {
+            MoodScreen(onNavigateBack = { navController.popBackStack() })
         }
 
         composable(NavRoutes.DataBookDetail.route) { backStackEntry ->

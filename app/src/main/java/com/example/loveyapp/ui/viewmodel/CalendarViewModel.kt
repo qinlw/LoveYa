@@ -1,13 +1,18 @@
 package com.example.loveyapp.ui.viewmodel
 
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.loveyapp.data.local.entity.CalendarMark
+import com.example.loveyapp.data.local.entity.Diary
 import com.example.loveyapp.data.prefs.DisplaySettingsStore
+import com.example.loveyapp.data.prefs.MoodType
+import com.example.loveyapp.data.prefs.MoodTypeStore
 import com.example.loveyapp.data.repository.CalendarMarkRepository
+import com.example.loveyapp.data.repository.DiaryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -19,9 +24,14 @@ import kotlin.math.roundToInt
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
     private val calendarMarkRepository: CalendarMarkRepository,
-    private val displaySettingsStore: DisplaySettingsStore
+    private val diaryRepository: DiaryRepository,
+    private val displaySettingsStore: DisplaySettingsStore,
+    private val moodTypeStore: MoodTypeStore
 ) : ViewModel() {
     var marks by mutableStateOf<List<CalendarMark>>(emptyList())
+    var diaries by mutableStateOf<List<Diary>>(emptyList())
+    var moodTypes by mutableStateOf<List<MoodType>>(moodTypeStore.getMoodTypes())
+        private set
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
 
@@ -46,6 +56,7 @@ class CalendarViewModel @Inject constructor(
 
     init {
         loadMarks()
+        loadDiaries()
     }
 
     fun loadMarks() {
@@ -56,6 +67,24 @@ class CalendarViewModel @Inject constructor(
             isLoading = false
         }
     }
+
+    /** 加载全部日记，供日历按日期关联展示 */
+    fun loadDiaries() {
+        viewModelScope.launch {
+            diaries = diaryRepository.getAllDiaries()
+        }
+    }
+
+    /** 某天写的所有日记（date 存储格式为 "yyyy-MM-dd HH:mm"，按日期前缀匹配） */
+    fun diariesForDate(date: LocalDate): List<Diary> {
+        val dateStr = date.format(dateFormatter)
+        return diaries
+            .filter { it.date.take(10) == dateStr }
+            .sortedByDescending { it.date }
+    }
+
+    /** 某天是否有日记（用于日历格标记） */
+    fun hasDiaryOn(date: LocalDate): Boolean = diariesForDate(date).isNotEmpty()
 
     fun prevMonth() {
         currentMonth = currentMonth.minusMonths(1)
@@ -92,6 +121,89 @@ class CalendarViewModel @Inject constructor(
             }
             loadMarks()
         }
+    }
+
+    /** 某天所有心情记录（按时间升序），一天可有多条 */
+    fun moodsForDate(date: LocalDate): List<CalendarMark> {
+        val dateStr = date.format(dateFormatter)
+        return marks
+            .filter { it.type == CalendarMark.TYPE_MOOD && it.date == dateStr }
+            .sortedBy { it.time ?: "00:00" }
+    }
+
+    /** 某天最新一条心情的类型（日历格显示用），无则返回 null */
+    fun latestMoodForDate(date: LocalDate): String? =
+        moodsForDate(date).lastOrNull()?.name
+
+    /** 某天心情记录条数（日历格角标显示用） */
+    fun moodCountForDate(date: LocalDate): Int = moodsForDate(date).size
+
+    /**
+     * 在指定日期的指定时刻（HH:mm）记录一条心情。
+     * 同一分钟可记录多条（各自生成新记录），用户可在列表中删除。
+     */
+    fun addMood(date: LocalDate, time: String, mood: String, note: String? = null) {
+        viewModelScope.launch {
+            calendarMarkRepository.addMark(
+                CalendarMark(
+                    date = date.format(dateFormatter),
+                    type = CalendarMark.TYPE_MOOD,
+                    name = mood,
+                    time = time,
+                    note = note
+                )
+            )
+            loadMarks()
+        }
+    }
+
+    /** 修改某条心情记录的文字描述 */
+    fun updateMoodNote(markId: Long, note: String?) {
+        viewModelScope.launch {
+            calendarMarkRepository.updateNote(markId, note)
+            loadMarks()
+        }
+    }
+
+    /** 新增自定义心情（可选带一张自定义表情图） */
+    fun addCustomMood(label: String, iconUri: Uri?) {
+        if (label.isBlank()) return
+        moodTypeStore.addCustomMood(label, iconUri)
+        moodTypes = moodTypeStore.getMoodTypes()
+    }
+
+    /** 修改心情名称（内置/自定义均可） */
+    fun renameMood(moodId: String, newLabel: String) {
+        if (moodTypeStore.renameMood(moodId, newLabel)) {
+            moodTypes = moodTypeStore.getMoodTypes()
+        }
+    }
+
+    /**
+     * 删除心情（内置/自定义均可）：只从选择列表移除，
+     * 不删除历史记录，避免用户已有数据丢失。
+     */
+    fun deleteMoodType(moodId: String) {
+        moodTypeStore.deleteMood(moodId)
+        moodTypes = moodTypeStore.getMoodTypes()
+    }
+
+    /** 某心情的历史记录条数（删除前提示用） */
+    fun moodRecordCount(moodId: String): Int =
+        marks.count { it.type == CalendarMark.TYPE_MOOD && it.name == moodId }
+
+    /** 全部心情记录条数（旧版横条入口展示用） */
+    fun totalMoodCount(): Int = marks.count { it.type == CalendarMark.TYPE_MOOD }
+
+    /** 从心情一览页返回后刷新心情定义（改名/删除/恢复） */
+    fun reloadMoodTypes() {
+        moodTypes = moodTypeStore.getMoodTypes()
+    }
+
+    /** 心情名称：优先取当前定义，已删除的心情回退到存档名称 */
+    fun moodLabelOf(moodId: String?): String? {
+        if (moodId == null) return null
+        return moodTypes.find { it.id == moodId }?.label ?: moodTypeStore.archivedLabelOf(moodId)
     }
 
     fun addAnniversaryMark(date: LocalDate, name: String) {

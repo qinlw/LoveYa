@@ -9,11 +9,16 @@ sealed class NavRoutes(val route: String) {
     object DiaryDetail : NavRoutes("diaryDetail/{diaryId}") {
         fun createRoute(diaryId: Long) = "diaryDetail/$diaryId"
     }
-    object DiaryEdit : NavRoutes("diaryEdit/{diaryId}") {
-        fun createRoute(diaryId: Long?) = "diaryEdit/${diaryId ?: "new"}"
+    object DiaryEdit : NavRoutes("diaryEdit/{diaryId}?date={date}") {
+        /** date 仅在新建日记时使用（yyyy-MM-dd），用于从日历带入指定日期 */
+        fun createRoute(diaryId: Long?, date: String? = null): String {
+            val base = "diaryEdit/${diaryId ?: "new"}"
+            return if (date != null) "$base?date=$date" else base
+        }
     }
     object DataBookList : NavRoutes("dataBookList")
     object Calendar : NavRoutes("calendar")
+    object Moods : NavRoutes("moods")
     object DataBookDetail : NavRoutes("dataBookDetail/{dataBookId}") {
         fun createRoute(dataBookId: Long) = "dataBookDetail/$dataBookId"
     }

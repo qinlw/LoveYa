@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- 自定义心情的默认表情：紫色笑脸 -->
+    <path
+        android:fillColor="#B39DFF"
+        android:pathData="M24,4 C12.95,4 4,12.95 4,24 C4,35.05 12.95,44 24,44 C35.05,44 44,35.05 44,24 C44,12.95 35.05,4 24,4 Z" />
+    <path
+        android:fillColor="#3A2C66"
+        android:pathData="M17,17 C18.1,17 19,17.9 19,19 C19,20.1 18.1,21 17,21 C15.9,21 15,20.1 15,19 C15,17.9 15.9,17 17,17 Z" />
+    <path
+        android:fillColor="#3A2C66"
+        android:pathData="M31,17 C32.1,17 33,17.9 33,19 C33,20.1 32.1,21 31,21 C29.9,21 29,20.1 29,19 C29,17.9 29.9,17 31,17 Z" />
+    <path
+        android:strokeColor="#3A2C66"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M16,30 Q24,36 32,30" />
+</vector>

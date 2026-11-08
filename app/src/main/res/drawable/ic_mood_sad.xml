@@ -1,0 +1,25 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- 不开心：灰蓝色难过脸，带一滴泪 -->
+    <path
+        android:fillColor="#BAC8D8"
+        android:pathData="M24,4 C12.95,4 4,12.95 4,24 C4,35.05 12.95,44 24,44 C35.05,44 44,35.05 44,24 C44,12.95 35.05,4 24,4 Z" />
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M17,16 C18.1,16 19,16.9 19,18 C19,19.1 18.1,20 17,20 C15.9,20 15,19.1 15,18 C15,16.9 15.9,16 17,16 Z" />
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M31,16 C32.1,16 33,16.9 33,18 C33,19.1 32.1,20 31,20 C29.9,20 29,19.1 29,18 C29,16.9 29.9,16 31,16 Z" />
+    <path
+        android:strokeColor="#37474F"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M16,36 Q24,27 32,36" />
+    <path
+        android:fillColor="#4FC3F7"
+        android:pathData="M17.5,22 C18.6,24 18.8,25.8 17.5,27.6 C16.2,25.8 16.4,24 17.5,22 Z" />
+</vector>

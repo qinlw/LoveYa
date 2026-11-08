@@ -27,14 +27,15 @@ import com.example.loveyapp.ui.component.currentDiaryDateTime
 import com.example.loveyapp.ui.component.normalizeDiaryDateTime
 import com.example.loveyapp.ui.component.splitDiaryDateTime
 import com.example.loveyapp.ui.viewmodel.DiaryViewModel
-import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun DiaryEditScreen(
     diaryId: Long?,
     onSaveSuccess: () -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    initialDate: String? = null
 ) {
     val viewModel: DiaryViewModel = hiltViewModel()
 
@@ -42,8 +43,14 @@ fun DiaryEditScreen(
     var content by remember { mutableStateOf("") }
     var tags by remember { mutableStateOf("") }
 
-    // 日记时间（必填）：默认取当前时间，保存后仍可修改
-    val initialDateTime = remember { currentDiaryDateTime() }
+    // 日记时间（必填）：默认当前时间；从日历进入新建时，日期用选中日、时刻用当前时间
+    val initialDateTime = remember {
+        if (initialDate != null) {
+            "$initialDate ${LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))}"
+        } else {
+            currentDiaryDateTime()
+        }
+    }
     val initialSplit = remember(initialDateTime) { splitDiaryDateTime(initialDateTime) }
     var diaryDate by remember { mutableStateOf(initialSplit.first) }
     var diaryTime by remember { mutableStateOf(initialSplit.second) }
@@ -77,8 +84,7 @@ fun DiaryEditScreen(
     }
 
     // 新建日记时作为 placeholder 显示的默认标题，不占用真正的标题框
-    val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-    val defaultTitle = "我的日记${today}"
+    val defaultTitle = "我的日记${diaryDate}"
 
     var saveMessage by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
 

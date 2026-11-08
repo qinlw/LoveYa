@@ -21,7 +21,7 @@ import com.example.loveyapp.data.local.entity.UserInfo
         AnniversaryConfig::class,
         CalendarMark::class
     ],
-    version = 7,
+    version = 9,
     exportSchema = false
 )
 abstract class LoveYaDatabase : RoomDatabase() {

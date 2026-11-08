@@ -35,4 +35,13 @@ class CalendarMarkRepository @Inject constructor(
             false
         }
     }
+
+    suspend fun updateNote(id: Long, note: String?): Boolean {
+        return try {
+            database.calendarMarkDao().updateNote(id, note, System.currentTimeMillis())
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
 }
